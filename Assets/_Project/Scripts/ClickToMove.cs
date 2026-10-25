@@ -18,6 +18,7 @@ public class ClickToMove : MonoBehaviour
     [SerializeField] private float navMeshSnapDistance = 2f;
 
     [Header("Movement")]
+    [Tooltip("Only used if this object has no CharacterStats. Otherwise speed comes from the MovementSpeed stat.")]
     [SerializeField] private float moveSpeed = 6f;
     [Tooltip("Turning speed in degrees per second.")]
     [SerializeField] private float turnSpeed = 1080f;
@@ -25,6 +26,7 @@ public class ClickToMove : MonoBehaviour
     [SerializeField] private float holdRepathInterval = 0.05f;
 
     private NavMeshAgent agent;
+    private CharacterStats stats;
     private Camera cam;
     private float repathTimer;
 
@@ -33,12 +35,33 @@ public class ClickToMove : MonoBehaviour
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
+        stats = GetComponent<CharacterStats>();
 
-        agent.speed = moveSpeed;
         agent.acceleration = 100f;   // near-instant starts and stops feel right for ARPGs
         agent.angularSpeed = 0f;
         agent.updateRotation = false; // rotation is handled manually below for snappier turns
         agent.autoBraking = true;
+        ApplyMoveSpeed();
+    }
+
+    private void OnEnable()
+    {
+        if (stats != null) stats.StatChanged += OnStatChanged;
+    }
+
+    private void OnDisable()
+    {
+        if (stats != null) stats.StatChanged -= OnStatChanged;
+    }
+
+    private void OnStatChanged(StatType type)
+    {
+        if (type == StatType.MovementSpeed) ApplyMoveSpeed();
+    }
+
+    private void ApplyMoveSpeed()
+    {
+        agent.speed = stats != null ? stats.GetValue(StatType.MovementSpeed) : moveSpeed;
     }
 
     private void Start()
