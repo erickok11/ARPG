@@ -7,7 +7,7 @@ using UnityEngine.InputSystem;
 ///   Click ground        -> walk there (hold to keep walking toward the cursor)
 ///   Click an enemy      -> walk into range and keep attacking until it dies or you click elsewhere
 ///   Click an item label -> walk to the item and pick it up
-/// Clicks inside the inventory window are ignored here.
+/// Clicks inside open windows (inventory, crafting) are ignored here.
 /// </summary>
 [RequireComponent(typeof(CharacterMover), typeof(MeleeAttack), typeof(Health))]
 public class PlayerController : MonoBehaviour
@@ -81,7 +81,7 @@ public class PlayerController : MonoBehaviour
 
         if (mouse.leftButton.wasPressedThisFrame)
         {
-            pressStartedOverUI = IsPointerOverUI() || InventoryWindow.IsPointerOverWindow(guiPosition);
+            pressStartedOverUI = IsPointerOverUI() || ClickBlocker.IsPointerOver(guiPosition);
             if (pressStartedOverUI) return;
 
             // Item labels take priority, like in PoE.

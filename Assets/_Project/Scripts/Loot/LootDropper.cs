@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.AI;
 
 /// <summary>
-/// Drops gold and random items when this character dies.
+/// Drops gold, crafting shards and random items when this character dies.
 /// </summary>
 [RequireComponent(typeof(Health))]
 public class LootDropper : MonoBehaviour
@@ -22,6 +22,11 @@ public class LootDropper : MonoBehaviour
     [Tooltip("Chance to drop a random item. Set to 1 while testing.")]
     [SerializeField, Range(0f, 1f)] private float itemDropChance = 0.35f;
 
+    [Header("Shards (each rolls separately)")]
+    [SerializeField, Range(0f, 1f)] private float augmentDropChance = 0.25f;
+    [SerializeField, Range(0f, 1f)] private float reforgeDropChance = 0.15f;
+    [SerializeField, Range(0f, 1f)] private float rerollDropChance = 0.1f;
+
     private static Material placeholderCoinMaterial;
     private Health health;
 
@@ -39,6 +44,9 @@ public class LootDropper : MonoBehaviour
     {
         if (Random.value < goldDropChance) DropGold();
         if (Random.value < itemDropChance) DropItem();
+        if (Random.value < augmentDropChance) DropShard(ShardType.Augment);
+        if (Random.value < reforgeDropChance) DropShard(ShardType.Reforge);
+        if (Random.value < rerollDropChance) DropShard(ShardType.Reroll);
     }
 
     private void DropGold()
@@ -59,6 +67,11 @@ public class LootDropper : MonoBehaviour
         Item item = ItemGenerator.GenerateRandom(monsterLevel);
         if (item == null) return;
         ItemPickup.Spawn(item, RandomFloorPosition(1f) + Vector3.up * 0.2f);
+    }
+
+    private void DropShard(ShardType type)
+    {
+        ShardPickup.Spawn(type, RandomFloorPosition(1f) + Vector3.up * 0.4f);
     }
 
     /// <summary>A random point on the floor near this character.</summary>

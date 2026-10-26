@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using Random = UnityEngine.Random;
 
 /// <summary>
-/// Creates random items and rolls affixes onto them.
-/// AddRandomAffix is exactly what the Augment Shard will do.
+/// Creates random items and rolls affixes onto them. The shards use these same rules.
 /// </summary>
 public static class ItemGenerator
 {
@@ -36,12 +35,13 @@ public static class ItemGenerator
 
     /// <summary>
     /// Adds one random affix the item is allowed to have. Returns false if nothing can be added
-    /// (all prefix and suffix slots are full, or nothing in the pool fits this base and item level).
+    /// (prefix and suffix slots full, or nothing in the pool fits this base and item level).
+    /// excludeAffixId stops a specific affix from rolling (Reforge uses this so you always get something new).
     /// </summary>
-    public static bool AddRandomAffix(Item item)
+    public static bool AddRandomAffix(Item item, string excludeAffixId = null)
     {
         if (item?.Base == null) return false;
-        if (!TryPickAffix(item, out AffixData affix, out int tierIndex)) return false;
+        if (!TryPickAffix(item, excludeAffixId, out AffixData affix, out int tierIndex)) return false;
 
         item.affixes.Add(RollValue(affix, tierIndex));
 
@@ -51,7 +51,25 @@ public static class ItemGenerator
         return true;
     }
 
-    private static bool TryPickAffix(Item item, out AffixData affix, out int tierIndex)
+    /// <summary>True if at least one affix could still be added to this item.</summary>
+    public static bool HasPossibleAffix(Item item, string excludeAffixId = null)
+    {
+        if (item?.Base == null) return false;
+        foreach (AffixData a in ItemDatabase.Affixes)
+            if (CanRoll(item, a, excludeAffixId) && EligibleWeight(a, item.itemLevel) > 0)
+                return true;
+        return false;
+    }
+
+    /// <summary>Rerolls one affix's number within its current tier (the tier itself doesn't change).</summary>
+    public static void RerollValue(RolledAffix affix)
+    {
+        AffixTierData tier = affix?.Tier;
+        if (tier == null) return;
+        affix.value = Random.Range(tier.min, tier.max + 1);
+    }
+
+    private static bool TryPickAffix(Item item, string excludeAffixId, out AffixData affix, out int tierIndex)
     {
         affix = null;
         tierIndex = -1;
@@ -60,7 +78,7 @@ public static class ItemGenerator
 
         foreach (AffixData a in ItemDatabase.Affixes)
         {
-            if (!CanRoll(item, a)) continue;
+            if (!CanRoll(item, a, excludeAffixId)) continue;
             int weight = EligibleWeight(a, item.itemLevel);
             if (weight <= 0) continue;
             candidates.Add((a, weight));
@@ -81,8 +99,11 @@ public static class ItemGenerator
         return tierIndex >= 0;
     }
 
-    private static bool CanRoll(Item item, AffixData affix) =>
-        item.HasOpenSlot(affix.affixGroup) && !item.HasAffix(affix.id) && MatchesTags(item.Base, affix);
+    private static bool CanRoll(Item item, AffixData affix, string excludeAffixId) =>
+        affix.id != excludeAffixId &&
+        item.HasOpenSlot(affix.affixGroup) &&
+        !item.HasAffix(affix.id) &&
+        MatchesTags(item.Base, affix);
 
     private static bool MatchesTags(ItemBaseData itemBase, AffixData affix)
     {

@@ -20,6 +20,7 @@ public class StatDebugOverlay : MonoBehaviour
     private CharacterStats stats;
     private Health health;
     private Wallet wallet;
+    private CurrencyPouch pouch;
     private GUIStyle labelStyle;
     private readonly StringBuilder text = new StringBuilder();
 
@@ -28,6 +29,7 @@ public class StatDebugOverlay : MonoBehaviour
         stats = GetComponent<CharacterStats>();
         health = GetComponent<Health>();
         wallet = GetComponent<Wallet>();
+        pouch = GetComponent<CurrencyPouch>();
     }
 
     private void OnGUI()
@@ -53,6 +55,13 @@ public class StatDebugOverlay : MonoBehaviour
         if (wallet != null)
             text.AppendLine($"<b>Gold  <color=#fc3>{wallet.Gold}</color></b>");
 
+        if (pouch != null)
+        {
+            foreach (ShardType type in ShardInfo.All)
+                text.Append($"<color={ShardInfo.Hex(type)}>{type} {pouch.Get(type)}</color>     ");
+            text.AppendLine();
+        }
+
         text.AppendLine();
 
         foreach (StatType type in AllStats)
@@ -74,7 +83,7 @@ public class StatDebugOverlay : MonoBehaviour
         }
 
         text.AppendLine();
-        text.AppendLine("<color=#aaa>I  inventory");
+        text.AppendLine("<color=#aaa>I  inventory     C  crafting");
         text.AppendLine("1  +30% increased move speed     3  50% less move speed");
         text.AppendLine("2  +50 max life     H  take 20 damage     0  remove test modifiers</color>");
 

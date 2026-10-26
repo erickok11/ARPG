@@ -17,14 +17,9 @@ public class InventoryWindow : MonoBehaviour
     [SerializeField] private float width = 640f;
     [SerializeField] private float height = 480f;
 
-    private static Rect? openRect;
-
-    /// <summary>True if a GUI-space point is inside the open inventory window (so clicks there don't move you).</summary>
-    public static bool IsPointerOverWindow(Vector2 guiPosition) =>
-        openRect.HasValue && openRect.Value.Contains(guiPosition);
-
     private Inventory inventory;
     private Equipment equipment;
+    private CraftingWindow craftingWindow;
     private bool isOpen;
     private Vector2 scroll;
     private Item hovered;
@@ -32,34 +27,42 @@ public class InventoryWindow : MonoBehaviour
     private GUIStyle headerStyle;
     private readonly List<Item> snapshot = new List<Item>();
 
+    public bool IsOpen => isOpen;
+
     private void Awake()
     {
         inventory = GetComponent<Inventory>();
         equipment = GetComponent<Equipment>();
+        craftingWindow = GetComponent<CraftingWindow>();
         isOpen = startOpen;
     }
 
-    private void OnDisable() => openRect = null;
+    private void OnDisable() => ClickBlocker.Clear(this);
+
+    public void SetOpen(bool open)
+    {
+        isOpen = open;
+        if (!open) ClickBlocker.Clear(this);
+    }
 
     private void Update()
     {
         Keyboard kb = Keyboard.current;
-        if (kb != null && kb.iKey.wasPressedThisFrame) isOpen = !isOpen;
-        if (!isOpen) openRect = null;
+        if (kb == null || !kb.iKey.wasPressedThisFrame) return;
+
+        SetOpen(!isOpen);
+        if (isOpen && craftingWindow != null) craftingWindow.SetOpen(false);
     }
 
     private void OnGUI()
     {
-        if (!isOpen)
-        {
-            openRect = null;
-            return;
-        }
+        if (!isOpen) return;
 
+        GUI.depth = -10; // draw on top of ground labels
         EnsureStyles();
 
         var window = new Rect(Screen.width - width - 10f, 10f, width, Mathf.Min(height, Screen.height - 20f));
-        openRect = window;
+        ClickBlocker.Set(this, window);
 
         if (Event.current.type == EventType.Repaint) hovered = null;
 
@@ -72,7 +75,7 @@ public class InventoryWindow : MonoBehaviour
         EquipSlot? toUnequip = null;
 
         GUILayout.BeginArea(new Rect(window.x + 10f, window.y + 10f, window.width - 20f, window.height - 20f));
-        GUILayout.Label("<b>Inventory</b>   <color=#888>I to close · click backpack items to equip · click equipped items to unequip</color>", headerStyle);
+        GUILayout.Label("<b>Inventory</b>   <color=#888>I to close · C for crafting · click backpack items to equip · click equipped items to unequip</color>", headerStyle);
         GUILayout.Space(6f);
         GUILayout.BeginHorizontal();
 
