@@ -6,6 +6,8 @@ using UnityEngine.InputSystem;
 /// Player mouse input:
 ///   Click ground        -> walk there (hold to keep walking toward the cursor)
 ///   Click an enemy      -> walk into range and keep attacking until it dies or you click elsewhere
+///   Click an item label -> walk to the item and pick it up
+/// Clicks inside the inventory window are ignored here.
 /// </summary>
 [RequireComponent(typeof(CharacterMover), typeof(MeleeAttack), typeof(Health))]
 public class PlayerController : MonoBehaviour
@@ -17,18 +19,26 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private LayerMask enemyMask;
     [SerializeField] private float maxRayDistance = 500f;
 
+    [Header("Items")]
+    [Tooltip("How close you need to be to pick up an item.")]
+    [SerializeField] private float pickupRange = 1.5f;
+
     [Header("Timing")]
     [Tooltip("While holding the button on the ground, how often to update the destination.")]
     [SerializeField] private float holdRepathInterval = 0.05f;
-    [Tooltip("While chasing an enemy, how often to update the path.")]
+    [Tooltip("While chasing an enemy or item, how often to update the path.")]
     [SerializeField] private float chaseRepathInterval = 0.1f;
 
     private CharacterMover mover;
     private MeleeAttack attack;
     private Health health;
+    private Inventory inventory;
     private Camera cam;
+
     private Health attackTarget;
+    private ItemPickup pickupTarget;
     private float repathTimer;
+    private bool pressStartedOverUI;
 
     public Health CurrentTarget => attackTarget;
 
@@ -37,6 +47,7 @@ public class PlayerController : MonoBehaviour
         mover = GetComponent<CharacterMover>();
         attack = GetComponent<MeleeAttack>();
         health = GetComponent<Health>();
+        inventory = GetComponent<Inventory>();
     }
 
     private void OnEnable() => health.Died += OnDied;
@@ -56,6 +67,7 @@ public class PlayerController : MonoBehaviour
         repathTimer -= Time.deltaTime;
         HandleMouse();
         UpdateAttack();
+        UpdatePickup();
     }
 
     private void HandleMouse()
@@ -63,17 +75,31 @@ public class PlayerController : MonoBehaviour
         Mouse mouse = Mouse.current;
         if (mouse == null || cam == null || !mouse.leftButton.isPressed) return;
 
-        Ray ray = cam.ScreenPointToRay(mouse.position.ReadValue());
+        Vector2 screenPosition = mouse.position.ReadValue();
+        Vector2 guiPosition = new Vector2(screenPosition.x, Screen.height - screenPosition.y);
+        Ray ray = cam.ScreenPointToRay(screenPosition);
 
         if (mouse.leftButton.wasPressedThisFrame)
         {
-            if (IsPointerOverUI()) return;
+            pressStartedOverUI = IsPointerOverUI() || InventoryWindow.IsPointerOverWindow(guiPosition);
+            if (pressStartedOverUI) return;
+
+            // Item labels take priority, like in PoE.
+            if (ItemPickup.TryGetLabelAt(guiPosition, out ItemPickup clickedItem))
+            {
+                pickupTarget = clickedItem;
+                attackTarget = null;
+                repathTimer = 0f;
+                return;
+            }
+
             if (!Physics.Raycast(ray, out RaycastHit hit, maxRayDistance, groundMask | enemyMask)) return;
 
             Health clickedEnemy = IsOnLayer(hit.collider.gameObject, enemyMask)
                 ? hit.collider.GetComponentInParent<Health>()
                 : null;
 
+            pickupTarget = null;
             if (clickedEnemy != null && !clickedEnemy.IsDead)
             {
                 attackTarget = clickedEnemy;
@@ -88,8 +114,8 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        // Button held: keep walking toward the cursor (unless attacking something).
-        if (attackTarget != null || repathTimer > 0f) return;
+        // Button held: keep walking toward the cursor (unless busy attacking or picking up).
+        if (pressStartedOverUI || attackTarget != null || pickupTarget != null || repathTimer > 0f) return;
         repathTimer = holdRepathInterval;
 
         if (Physics.Raycast(ray, out RaycastHit groundHit, maxRayDistance, groundMask))
@@ -120,9 +146,33 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private void UpdatePickup()
+    {
+        if (pickupTarget == null) return;
+
+        Vector3 offset = pickupTarget.transform.position - transform.position;
+        offset.y = 0f;
+
+        if (offset.sqrMagnitude <= pickupRange * pickupRange)
+        {
+            mover.Stop();
+            if (inventory != null && inventory.Add(pickupTarget.Item))
+                Destroy(pickupTarget.gameObject);
+            else
+                Debug.Log(inventory == null ? "Player has no Inventory component." : "Inventory is full.");
+            pickupTarget = null;
+        }
+        else if (repathTimer <= 0f)
+        {
+            repathTimer = chaseRepathInterval;
+            mover.MoveTo(pickupTarget.transform.position);
+        }
+    }
+
     private void OnDied()
     {
         attackTarget = null;
+        pickupTarget = null;
         mover.DisableMovement();
         Debug.Log("You died. Stop and press Play to try again.");
     }

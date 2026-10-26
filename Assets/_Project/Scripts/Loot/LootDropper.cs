@@ -2,11 +2,15 @@ using UnityEngine;
 using UnityEngine.AI;
 
 /// <summary>
-/// Drops gold when this character dies. Items will be added here later.
+/// Drops gold and random items when this character dies.
 /// </summary>
 [RequireComponent(typeof(Health))]
 public class LootDropper : MonoBehaviour
 {
+    [Header("Monster")]
+    [Tooltip("Item level of drops. Higher levels unlock stronger affix tiers (try 60 to see top tiers).")]
+    [SerializeField, Min(1)] private int monsterLevel = 1;
+
     [Header("Gold")]
     [SerializeField, Range(0f, 1f)] private float goldDropChance = 0.8f;
     [SerializeField] private int minGold = 3;
@@ -14,8 +18,14 @@ public class LootDropper : MonoBehaviour
     [Tooltip("Optional. Leave empty to use a placeholder gold coin.")]
     [SerializeField] private GameObject goldPrefab;
 
+    [Header("Items")]
+    [Tooltip("Chance to drop a random item. Set to 1 while testing.")]
+    [SerializeField, Range(0f, 1f)] private float itemDropChance = 0.35f;
+
     private static Material placeholderCoinMaterial;
     private Health health;
+
+    public int MonsterLevel => monsterLevel;
 
     private void Awake()
     {
@@ -27,15 +37,13 @@ public class LootDropper : MonoBehaviour
 
     private void DropLoot()
     {
-        if (Random.value > goldDropChance) return;
+        if (Random.value < goldDropChance) DropGold();
+        if (Random.value < itemDropChance) DropItem();
+    }
 
-        Vector2 scatter = Random.insideUnitCircle * 0.6f;
-        Vector3 position = transform.position + new Vector3(scatter.x, 0f, scatter.y);
-
-        // Put the coin on the floor rather than at the monster's waist.
-        if (NavMesh.SamplePosition(position, out NavMeshHit navHit, 3f, NavMesh.AllAreas))
-            position = navHit.position;
-        position += Vector3.up * 0.3f;
+    private void DropGold()
+    {
+        Vector3 position = RandomFloorPosition(0.6f) + Vector3.up * 0.3f;
 
         GameObject coin = goldPrefab != null
             ? Instantiate(goldPrefab, position, Quaternion.identity)
@@ -44,6 +52,24 @@ public class LootDropper : MonoBehaviour
         GoldPickup pickup = coin.GetComponent<GoldPickup>();
         if (pickup == null) pickup = coin.AddComponent<GoldPickup>();
         pickup.SetAmount(Random.Range(minGold, maxGold + 1));
+    }
+
+    private void DropItem()
+    {
+        Item item = ItemGenerator.GenerateRandom(monsterLevel);
+        if (item == null) return;
+        ItemPickup.Spawn(item, RandomFloorPosition(1f) + Vector3.up * 0.2f);
+    }
+
+    /// <summary>A random point on the floor near this character.</summary>
+    private Vector3 RandomFloorPosition(float scatterRadius)
+    {
+        Vector2 scatter = Random.insideUnitCircle * scatterRadius;
+        Vector3 position = transform.position + new Vector3(scatter.x, 0f, scatter.y);
+
+        if (NavMesh.SamplePosition(position, out NavMeshHit navHit, 3f, NavMesh.AllAreas))
+            position = navHit.position;
+        return position;
     }
 
     private static GameObject CreatePlaceholderCoin(Vector3 position)

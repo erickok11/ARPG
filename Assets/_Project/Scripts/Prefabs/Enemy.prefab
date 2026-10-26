@@ -242,10 +242,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec11edbf0a0b042a09051279e72b1f27, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LootDropper
-  goldDropChance: 0.8
+  monsterLevel: 60
+  goldDropChance: 0.803
   minGold: 3
   maxGold: 10
   goldPrefab: {fileID: 0}
+  itemDropChance: 1
 --- !u!114 &7429068016726000358
 MonoBehaviour:
   m_ObjectHideFlags: 0

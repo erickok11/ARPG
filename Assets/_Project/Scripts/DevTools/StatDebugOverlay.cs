@@ -1,8 +1,9 @@
+using System;
 using System.Text;
 using UnityEngine;
 
 /// <summary>
-/// Temporary on-screen panel that shows life and stats live in the Game view.
+/// Temporary on-screen panel that shows life, gold and every stat that isn't zero.
 /// Add it to the Player next to CharacterStats. Remove it once real UI exists.
 /// </summary>
 [RequireComponent(typeof(CharacterStats))]
@@ -10,19 +11,11 @@ public class StatDebugOverlay : MonoBehaviour
 {
     [SerializeField] private bool visible = true;
     [Tooltip("Raise this if the text looks tiny (common on Retina screens).")]
-    [SerializeField] private int fontSize = 18;
-    [SerializeField]
-    private StatType[] shownStats =
-    {
-        StatType.MaxLife,
-        StatType.LifeRegen,
-        StatType.MaxMana,
-        StatType.MovementSpeed,
-        StatType.PhysicalDamage,
-        StatType.AttackSpeed,
-        StatType.CritChance,
-        StatType.CritMultiplier,
-    };
+    [SerializeField] private int fontSize = 16;
+    [Tooltip("Also list the base value and each modifier next to stats that have modifiers.")]
+    [SerializeField] private bool showModifiers = true;
+
+    private static readonly StatType[] AllStats = (StatType[])Enum.GetValues(typeof(StatType));
 
     private CharacterStats stats;
     private Health health;
@@ -62,12 +55,15 @@ public class StatDebugOverlay : MonoBehaviour
 
         text.AppendLine();
 
-        foreach (StatType type in shownStats)
+        foreach (StatType type in AllStats)
         {
             Stat stat = stats.Get(type);
-            text.Append($"{type}: <b>{stat.Value:0.##}</b>");
+            if (Mathf.Approximately(stat.Value, 0f) && stat.Modifiers.Count == 0) continue;
 
-            if (stat.Modifiers.Count > 0)
+            string percent = StatText.IsPercent(type) ? "%" : "";
+            text.Append($"{StatText.Name(type)}: <b>{stat.Value:0.##}{percent}</b>");
+
+            if (showModifiers && stat.Modifiers.Count > 0)
             {
                 text.Append($"  <color=#8cf>(base {stat.BaseValue:0.##}");
                 foreach (StatModifier m in stat.Modifiers)
@@ -78,18 +74,19 @@ public class StatDebugOverlay : MonoBehaviour
         }
 
         text.AppendLine();
-        text.AppendLine("<color=#aaa>1  +30% increased move speed");
-        text.AppendLine("3  50% less move speed");
-        text.AppendLine("2  +50 max life");
-        text.AppendLine("H  take 20 damage");
-        text.Append("0  remove test modifiers</color>");
+        text.AppendLine("<color=#aaa>I  inventory");
+        text.AppendLine("1  +30% increased move speed     3  50% less move speed");
+        text.AppendLine("2  +50 max life     H  take 20 damage     0  remove test modifiers</color>");
 
-        var content = new GUIContent(text.ToString());
+        var content = new GUIContent(text.ToString().TrimEnd());
         Vector2 size = labelStyle.CalcSize(content);
 
         const float margin = 10f;
         const float padding = 10f;
-        GUI.Box(new Rect(margin, margin, size.x + padding * 2f, size.y + padding * 2f), GUIContent.none);
+        Color previous = GUI.color;
+        GUI.color = new Color(0f, 0f, 0f, 0.7f);
+        GUI.DrawTexture(new Rect(margin, margin, size.x + padding * 2f, size.y + padding * 2f), Texture2D.whiteTexture);
+        GUI.color = previous;
         GUI.Label(new Rect(margin + padding, margin + padding, size.x, size.y), content, labelStyle);
     }
 }

@@ -1,0 +1,51 @@
+{
+  "bases": [
+    { "id": "rusted_sword",   "name": "Rusted Sword",   "slot": "Weapon",    "tags": ["weapon", "melee", "sword"],
+      "implicits": [ { "stat": "PhysicalDamage", "type": "Flat", "value": 6 } ] },
+    { "id": "bronze_mace",    "name": "Bronze Mace",    "slot": "Weapon",    "tags": ["weapon", "melee", "mace"],
+      "implicits": [ { "stat": "PhysicalDamage", "type": "Flat", "value": 9 },
+                     { "stat": "AttackSpeed", "type": "Increased", "value": -10 } ] },
+    { "id": "curved_dagger",  "name": "Curved Dagger",  "slot": "Weapon",    "tags": ["weapon", "melee", "dagger"],
+      "implicits": [ { "stat": "PhysicalDamage", "type": "Flat", "value": 4 },
+                     { "stat": "CritChance", "type": "Flat", "value": 3 } ] },
+
+    { "id": "wooden_buckler", "name": "Wooden Buckler", "slot": "Offhand",   "tags": ["offhand", "shield", "armor", "evasion"],
+      "implicits": [ { "stat": "Armor", "type": "Flat", "value": 12 },
+                     { "stat": "Evasion", "type": "Flat", "value": 12 } ] },
+
+    { "id": "iron_cap",       "name": "Iron Cap",       "slot": "Helmet",    "tags": ["helmet", "armor"],
+      "implicits": [ { "stat": "Armor", "type": "Flat", "value": 20 } ] },
+    { "id": "leather_hood",   "name": "Leather Hood",   "slot": "Helmet",    "tags": ["helmet", "evasion"],
+      "implicits": [ { "stat": "Evasion", "type": "Flat", "value": 20 } ] },
+    { "id": "silk_circlet",   "name": "Silk Circlet",   "slot": "Helmet",    "tags": ["helmet", "es"],
+      "implicits": [ { "stat": "EnergyShield", "type": "Flat", "value": 10 } ] },
+
+    { "id": "plate_vest",     "name": "Plate Vest",     "slot": "BodyArmor", "tags": ["body", "armor"],
+      "implicits": [ { "stat": "Armor", "type": "Flat", "value": 45 } ] },
+    { "id": "leather_tunic",  "name": "Leather Tunic",  "slot": "BodyArmor", "tags": ["body", "evasion"],
+      "implicits": [ { "stat": "Evasion", "type": "Flat", "value": 45 } ] },
+    { "id": "silk_robe",      "name": "Silk Robe",      "slot": "BodyArmor", "tags": ["body", "es"],
+      "implicits": [ { "stat": "EnergyShield", "type": "Flat", "value": 22 } ] },
+
+    { "id": "iron_gauntlets", "name": "Iron Gauntlets", "slot": "Gloves",    "tags": ["gloves", "armor"],
+      "implicits": [ { "stat": "Armor", "type": "Flat", "value": 12 } ] },
+    { "id": "leather_gloves", "name": "Leather Gloves", "slot": "Gloves",    "tags": ["gloves", "evasion"],
+      "implicits": [ { "stat": "Evasion", "type": "Flat", "value": 12 } ] },
+
+    { "id": "iron_greaves",   "name": "Iron Greaves",   "slot": "Boots",     "tags": ["boots", "armor"],
+      "implicits": [ { "stat": "Armor", "type": "Flat", "value": 12 } ] },
+    { "id": "leather_boots",  "name": "Leather Boots",  "slot": "Boots",     "tags": ["boots", "evasion"],
+      "implicits": [ { "stat": "Evasion", "type": "Flat", "value": 12 } ] },
+
+    { "id": "leather_belt",   "name": "Leather Belt",   "slot": "Belt",      "tags": ["belt"],
+      "implicits": [ { "stat": "MaxLife", "type": "Flat", "value": 15 } ] },
+
+    { "id": "bone_amulet",    "name": "Bone Amulet",    "slot": "Amulet",    "tags": ["amulet"],
+      "implicits": [] },
+
+    { "id": "iron_ring",      "name": "Iron Ring",      "slot": "Ring",      "tags": ["ring"],
+      "implicits": [ { "stat": "PhysicalDamage", "type": "Flat", "value": 2 } ] },
+    { "id": "ruby_ring",      "name": "Ruby Ring",      "slot": "Ring",      "tags": ["ring"],
+      "implicits": [ { "stat": "FireResistance", "type": "Flat", "value": 15 } ] }
+  ]
+}

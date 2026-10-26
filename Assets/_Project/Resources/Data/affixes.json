@@ -1,0 +1,170 @@
+{
+  "affixes": [
+    { "id": "flat_life", "group": "Prefix", "stat": "MaxLife", "type": "Flat",
+      "text": "+{0} to maximum Life",
+      "allowedTags": ["helmet", "body", "gloves", "boots", "offhand", "belt", "amulet", "ring"],
+      "tiers": [
+        { "name": "Hale",      "minLevel": 1,  "min": 10, "max": 19, "weight": 1000 },
+        { "name": "Healthy",   "minLevel": 15, "min": 20, "max": 34, "weight": 800 },
+        { "name": "Sanguine",  "minLevel": 35, "min": 35, "max": 54, "weight": 500 },
+        { "name": "Vigorous",  "minLevel": 60, "min": 55, "max": 79, "weight": 250 }
+      ] },
+
+    { "id": "flat_mana", "group": "Prefix", "stat": "MaxMana", "type": "Flat",
+      "text": "+{0} to maximum Mana",
+      "allowedTags": ["helmet", "belt", "amulet", "ring"],
+      "tiers": [
+        { "name": "Beryl",     "minLevel": 1,  "min": 10, "max": 19, "weight": 1000 },
+        { "name": "Cobalt",    "minLevel": 20, "min": 20, "max": 34, "weight": 700 },
+        { "name": "Azure",     "minLevel": 45, "min": 35, "max": 54, "weight": 400 }
+      ] },
+
+    { "id": "flat_phys", "group": "Prefix", "stat": "PhysicalDamage", "type": "Flat",
+      "text": "Adds {0} Physical Damage to Attacks",
+      "allowedTags": ["weapon", "gloves", "ring", "amulet"],
+      "tiers": [
+        { "name": "Glinting",  "minLevel": 1,  "min": 2,  "max": 4,  "weight": 1000 },
+        { "name": "Burnished", "minLevel": 15, "min": 5,  "max": 8,  "weight": 800 },
+        { "name": "Polished",  "minLevel": 35, "min": 9,  "max": 14, "weight": 500 },
+        { "name": "Honed",     "minLevel": 60, "min": 15, "max": 22, "weight": 250 }
+      ] },
+
+    { "id": "inc_phys", "group": "Prefix", "stat": "PhysicalDamage", "type": "Increased",
+      "text": "{0}% increased Physical Damage",
+      "allowedTags": ["weapon"],
+      "tiers": [
+        { "name": "Heavy",     "minLevel": 1,  "min": 15, "max": 29, "weight": 1000 },
+        { "name": "Serrated",  "minLevel": 20, "min": 30, "max": 49, "weight": 700 },
+        { "name": "Wicked",    "minLevel": 45, "min": 50, "max": 79, "weight": 400 }
+      ] },
+
+    { "id": "flat_armor", "group": "Prefix", "stat": "Armor", "type": "Flat",
+      "text": "+{0} to Armor",
+      "allowedTags": ["armor"],
+      "tiers": [
+        { "name": "Lacquered", "minLevel": 1,  "min": 10, "max": 25,  "weight": 1000 },
+        { "name": "Studded",   "minLevel": 20, "min": 26, "max": 60,  "weight": 700 },
+        { "name": "Ribbed",    "minLevel": 45, "min": 61, "max": 110, "weight": 400 }
+      ] },
+
+    { "id": "flat_evasion", "group": "Prefix", "stat": "Evasion", "type": "Flat",
+      "text": "+{0} to Evasion",
+      "allowedTags": ["evasion"],
+      "tiers": [
+        { "name": "Agile",     "minLevel": 1,  "min": 10, "max": 25,  "weight": 1000 },
+        { "name": "Dancer's",  "minLevel": 20, "min": 26, "max": 60,  "weight": 700 },
+        { "name": "Acrobat's", "minLevel": 45, "min": 61, "max": 110, "weight": 400 }
+      ] },
+
+    { "id": "flat_es", "group": "Prefix", "stat": "EnergyShield", "type": "Flat",
+      "text": "+{0} to Energy Shield",
+      "allowedTags": ["es"],
+      "tiers": [
+        { "name": "Shining",    "minLevel": 1,  "min": 5,  "max": 12, "weight": 1000 },
+        { "name": "Glimmering", "minLevel": 20, "min": 13, "max": 28, "weight": 700 },
+        { "name": "Glittering", "minLevel": 45, "min": 29, "max": 50, "weight": 400 }
+      ] },
+
+    { "id": "strength", "group": "Suffix", "stat": "Strength", "type": "Flat",
+      "text": "+{0} to Strength",
+      "allowedTags": ["helmet", "body", "gloves", "boots", "belt", "amulet", "ring"],
+      "tiers": [
+        { "name": "of the Brute",    "minLevel": 1,  "min": 8,  "max": 12, "weight": 1000 },
+        { "name": "of the Wrestler", "minLevel": 20, "min": 13, "max": 22, "weight": 700 },
+        { "name": "of the Bear",     "minLevel": 45, "min": 23, "max": 32, "weight": 400 }
+      ] },
+
+    { "id": "dexterity", "group": "Suffix", "stat": "Dexterity", "type": "Flat",
+      "text": "+{0} to Dexterity",
+      "allowedTags": ["helmet", "body", "gloves", "boots", "amulet", "ring"],
+      "tiers": [
+        { "name": "of the Mongoose", "minLevel": 1,  "min": 8,  "max": 12, "weight": 1000 },
+        { "name": "of the Lynx",     "minLevel": 20, "min": 13, "max": 22, "weight": 700 },
+        { "name": "of the Fox",      "minLevel": 45, "min": 23, "max": 32, "weight": 400 }
+      ] },
+
+    { "id": "intelligence", "group": "Suffix", "stat": "Intelligence", "type": "Flat",
+      "text": "+{0} to Intelligence",
+      "allowedTags": ["helmet", "body", "gloves", "amulet", "ring"],
+      "tiers": [
+        { "name": "of the Pupil",   "minLevel": 1,  "min": 8,  "max": 12, "weight": 1000 },
+        { "name": "of the Student", "minLevel": 20, "min": 13, "max": 22, "weight": 700 },
+        { "name": "of the Prodigy", "minLevel": 45, "min": 23, "max": 32, "weight": 400 }
+      ] },
+
+    { "id": "fire_res", "group": "Suffix", "stat": "FireResistance", "type": "Flat",
+      "text": "+{0}% to Fire Resistance",
+      "allowedTags": ["helmet", "body", "gloves", "boots", "offhand", "belt", "amulet", "ring"],
+      "tiers": [
+        { "name": "of the Whelpling",  "minLevel": 1,  "min": 6,  "max": 11, "weight": 1000 },
+        { "name": "of the Salamander", "minLevel": 15, "min": 12, "max": 23, "weight": 800 },
+        { "name": "of the Drake",      "minLevel": 35, "min": 24, "max": 35, "weight": 500 },
+        { "name": "of the Kiln",       "minLevel": 60, "min": 36, "max": 45, "weight": 250 }
+      ] },
+
+    { "id": "cold_res", "group": "Suffix", "stat": "ColdResistance", "type": "Flat",
+      "text": "+{0}% to Cold Resistance",
+      "allowedTags": ["helmet", "body", "gloves", "boots", "offhand", "belt", "amulet", "ring"],
+      "tiers": [
+        { "name": "of the Seal",    "minLevel": 1,  "min": 6,  "max": 11, "weight": 1000 },
+        { "name": "of the Penguin", "minLevel": 15, "min": 12, "max": 23, "weight": 800 },
+        { "name": "of the Yeti",    "minLevel": 35, "min": 24, "max": 35, "weight": 500 },
+        { "name": "of the Walrus",  "minLevel": 60, "min": 36, "max": 45, "weight": 250 }
+      ] },
+
+    { "id": "lightning_res", "group": "Suffix", "stat": "LightningResistance", "type": "Flat",
+      "text": "+{0}% to Lightning Resistance",
+      "allowedTags": ["helmet", "body", "gloves", "boots", "offhand", "belt", "amulet", "ring"],
+      "tiers": [
+        { "name": "of the Cloud",       "minLevel": 1,  "min": 6,  "max": 11, "weight": 1000 },
+        { "name": "of the Squall",      "minLevel": 15, "min": 12, "max": 23, "weight": 800 },
+        { "name": "of the Storm",       "minLevel": 35, "min": 24, "max": 35, "weight": 500 },
+        { "name": "of the Thunderhead", "minLevel": 60, "min": 36, "max": 45, "weight": 250 }
+      ] },
+
+    { "id": "attack_speed", "group": "Suffix", "stat": "AttackSpeed", "type": "Increased",
+      "text": "{0}% increased Attack Speed",
+      "allowedTags": ["weapon", "gloves"],
+      "tiers": [
+        { "name": "of Skill",   "minLevel": 1,  "min": 5,  "max": 9,  "weight": 1000 },
+        { "name": "of Ease",    "minLevel": 20, "min": 10, "max": 15, "weight": 700 },
+        { "name": "of Mastery", "minLevel": 45, "min": 16, "max": 22, "weight": 400 }
+      ] },
+
+    { "id": "crit_chance", "group": "Suffix", "stat": "CritChance", "type": "Increased",
+      "text": "{0}% increased Critical Strike Chance",
+      "allowedTags": ["weapon", "amulet", "ring"],
+      "tiers": [
+        { "name": "of Needling", "minLevel": 1,  "min": 10, "max": 19, "weight": 1000 },
+        { "name": "of Stinging", "minLevel": 25, "min": 20, "max": 29, "weight": 700 },
+        { "name": "of Piercing", "minLevel": 50, "min": 30, "max": 39, "weight": 400 }
+      ] },
+
+    { "id": "crit_multi", "group": "Suffix", "stat": "CritMultiplier", "type": "Flat",
+      "text": "+{0}% to Critical Strike Multiplier",
+      "allowedTags": ["weapon", "amulet"],
+      "tiers": [
+        { "name": "of Ire",   "minLevel": 1,  "min": 10, "max": 14, "weight": 1000 },
+        { "name": "of Anger", "minLevel": 25, "min": 15, "max": 19, "weight": 700 },
+        { "name": "of Rage",  "minLevel": 50, "min": 20, "max": 28, "weight": 400 }
+      ] },
+
+    { "id": "move_speed", "group": "Suffix", "stat": "MovementSpeed", "type": "Increased",
+      "text": "{0}% increased Movement Speed",
+      "allowedTags": ["boots"],
+      "tiers": [
+        { "name": "of Haste",    "minLevel": 1,  "min": 10, "max": 14, "weight": 1000 },
+        { "name": "of Speed",    "minLevel": 20, "min": 15, "max": 19, "weight": 700 },
+        { "name": "of Celerity", "minLevel": 45, "min": 20, "max": 25, "weight": 400 }
+      ] },
+
+    { "id": "life_regen", "group": "Suffix", "stat": "LifeRegen", "type": "Flat",
+      "text": "Regenerate {0} Life per second",
+      "allowedTags": ["body", "belt", "amulet", "ring"],
+      "tiers": [
+        { "name": "of the Newt",     "minLevel": 1,  "min": 1, "max": 2, "weight": 1000 },
+        { "name": "of the Lizard",   "minLevel": 20, "min": 3, "max": 5, "weight": 700 },
+        { "name": "of the Flatworm", "minLevel": 45, "min": 6, "max": 9, "weight": 400 }
+      ] }
+  ]
+}
