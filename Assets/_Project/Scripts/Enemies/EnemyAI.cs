@@ -88,6 +88,9 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    /// <summary>Start chasing the player right away (used by EnemySpawner).</summary>
+    public void Aggro() => aggroed = true;
+
     private void OnDamaged(float amount) => aggroed = true;
 
     private void OnDied()

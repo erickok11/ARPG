@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -12,6 +13,7 @@ using UnityEngine.InputSystem.Controls;
 ///       Strike skills target the enemy under (or near) the cursor and walk into range first.
 ///       Projectile and Slam skills fire toward the cursor right away.
 /// Clicks on open windows and the HUD are ignored here.
+/// When you die you lose some experience (CharacterLevel) and come back after a few seconds.
 /// </summary>
 [RequireComponent(typeof(CharacterMover), typeof(MeleeAttack), typeof(Health))]
 public class PlayerController : MonoBehaviour
@@ -37,12 +39,21 @@ public class PlayerController : MonoBehaviour
     [Tooltip("While chasing an enemy or item, how often to update the path.")]
     [SerializeField] private float chaseRepathInterval = 0.1f;
 
+    [Header("Death")]
+    [Tooltip("Seconds after dying before you come back.")]
+    [SerializeField] private float respawnDelay = 3f;
+    [Tooltip("Where you come back. Leave empty to use where you started.")]
+    [SerializeField] private Transform respawnPoint;
+
     private CharacterMover mover;
     private MeleeAttack attack;
     private Health health;
     private Inventory inventory;
     private SkillUser skillUser;
+    private Mana mana;
+    private CharacterLevel characterLevel;
     private Camera cam;
+    private Vector3 startPosition;
 
     private Health attackTarget;
     private int targetSkillSlot = -1;  // -1 = basic attack; otherwise the skill slot being used on attackTarget
@@ -52,6 +63,8 @@ public class PlayerController : MonoBehaviour
     private bool pressStartedOverUI;
 
     public Health CurrentTarget => attackTarget;
+    /// <summary>Seconds until you respawn while dead, otherwise 0.</summary>
+    public float RespawnTimeLeft { get; private set; }
 
     private void Awake()
     {
@@ -60,6 +73,9 @@ public class PlayerController : MonoBehaviour
         health = GetComponent<Health>();
         inventory = GetComponent<Inventory>();
         skillUser = GetComponent<SkillUser>();
+        mana = GetComponent<Mana>();
+        characterLevel = GetComponent<CharacterLevel>();
+        startPosition = transform.position;
     }
 
     private void OnEnable() => health.Died += OnDied;
@@ -337,7 +353,25 @@ public class PlayerController : MonoBehaviour
         ClearAttackTarget();
         pickupTarget = null;
         mover.DisableMovement();
-        Debug.Log("You died. Stop and press Play to try again.");
+
+        int lost = characterLevel != null ? characterLevel.ApplyDeathPenalty() : 0;
+        Debug.Log(lost > 0 ? $"You died and lost {lost} experience." : "You died.");
+        StartCoroutine(RespawnAfterDelay());
+    }
+
+    private IEnumerator RespawnAfterDelay()
+    {
+        RespawnTimeLeft = respawnDelay;
+        while (RespawnTimeLeft > 0f)
+        {
+            RespawnTimeLeft -= Time.deltaTime;
+            yield return null;
+        }
+        RespawnTimeLeft = 0f;
+
+        mover.EnableMovement(respawnPoint != null ? respawnPoint.position : startPosition);
+        health.Revive();
+        if (mana != null) mana.Restore(mana.Max);
     }
 
     private static bool IsOnLayer(GameObject go, LayerMask mask)

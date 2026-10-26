@@ -1,7 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// Temporary bottom-of-screen HUD: life bar, mana bar and the Q / W / E / R skill slots.
+/// Temporary bottom-of-screen HUD: life bar, mana bar, experience bar and the Q / W / E / R skill slots.
+/// Also shows short messages: why a skill can't be used, level ups, and gem level ups.
 ///   Red slot text  = you don't meet the attribute requirements.
 ///   Blue slot text = not enough mana.
 ///   Dark sweep     = still swinging or casting.
@@ -18,8 +19,13 @@ public class SkillBarHUD : MonoBehaviour
     private SkillUser user;
     private Health health;
     private Mana mana;
+    private CharacterLevel characterLevel;
+
+    private static readonly Color FailColor = new Color(1f, 0.55f, 0.5f);
+    private static readonly Color LevelUpColor = new Color(1f, 0.83f, 0.3f);
 
     private string message;
+    private Color messageColor;
     private float messageUntil;
     private GUIStyle textStyle;
     private GUIStyle centerStyle;
@@ -30,19 +36,32 @@ public class SkillBarHUD : MonoBehaviour
         user = GetComponent<SkillUser>();
         health = GetComponent<Health>();
         mana = GetComponent<Mana>();
+        characterLevel = GetComponent<CharacterLevel>();
     }
 
-    private void OnEnable() => user.UseFailed += ShowMessage;
+    private void OnEnable()
+    {
+        user.UseFailed += OnUseFailed;
+        bar.GemLeveledUp += OnGemLeveledUp;
+        if (characterLevel != null) characterLevel.LeveledUp += OnLeveledUp;
+    }
 
     private void OnDisable()
     {
-        user.UseFailed -= ShowMessage;
+        user.UseFailed -= OnUseFailed;
+        bar.GemLeveledUp -= OnGemLeveledUp;
+        if (characterLevel != null) characterLevel.LeveledUp -= OnLeveledUp;
         ClickBlocker.Clear(this);
     }
 
-    private void ShowMessage(string text)
+    private void OnUseFailed(string text) => ShowMessage(text, FailColor);
+    private void OnLeveledUp(int level) => ShowMessage($"Level {level}!", LevelUpColor);
+    private void OnGemLeveledUp(string gemName, int level) => ShowMessage($"{gemName} reached level {level}", LevelUpColor);
+
+    private void ShowMessage(string text, Color color)
     {
         message = text;
+        messageColor = color;
         messageUntil = Time.unscaledTime + messageDuration;
     }
 
@@ -53,7 +72,8 @@ public class SkillBarHUD : MonoBehaviour
         float total = SkillBar.SlotCount * slotSize + (SkillBar.SlotCount - 1) * slotGap;
         float x0 = (Screen.width - total) / 2f;
         float slotY = Screen.height - slotSize - 14f;
-        float manaY = slotY - 22f;
+        float xpY = slotY - 20f;
+        float manaY = xpY - 22f;
         float lifeY = manaY - 20f;
 
         // Clicking the HUD shouldn't make you walk there.
@@ -67,6 +87,11 @@ public class SkillBarHUD : MonoBehaviour
         if (mana != null)
             DrawBar(new Rect(x0, manaY, total, 16f), mana.Fraction, new Color(0.2f, 0.4f, 0.95f),
                     $"Mana {mana.Current:0} / {mana.Max:0}");
+        if (characterLevel != null)
+            DrawBar(new Rect(x0, xpY, total, 14f), characterLevel.Progress, new Color(0.75f, 0.6f, 0.15f),
+                    characterLevel.IsMaxLevel
+                        ? $"Level {characterLevel.Level}"
+                        : $"Level {characterLevel.Level}   {characterLevel.Experience} / {characterLevel.ExperienceToNext} xp");
 
         for (int slot = 0; slot < SkillBar.SlotCount; slot++)
             DrawSlot(slot, new Rect(x0 + slot * (slotSize + slotGap), slotY, slotSize, slotSize));
@@ -74,7 +99,7 @@ public class SkillBarHUD : MonoBehaviour
         if (!string.IsNullOrEmpty(message) && Time.unscaledTime < messageUntil)
         {
             var rect = new Rect(x0 - 100f, lifeY - 30f, total + 200f, 24f);
-            centerStyle.normal.textColor = new Color(1f, 0.55f, 0.5f);
+            centerStyle.normal.textColor = messageColor;
             GUI.Label(rect, message, centerStyle);
         }
     }

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -10,9 +9,6 @@ using UnityEngine;
 [Serializable]
 public class SupportData
 {
-    /// <summary>Spread used when a support adds projectiles to a skill that fires only one (like Fireball).</summary>
-    private const float DefaultSpread = 10f;
-
     public string id;
     public string name;
     public string description;
@@ -43,37 +39,17 @@ public class SupportData
         return true;
     }
 
-    /// <summary>
-    /// Builds the skill as it is actually used: a copy of the base skill with every compatible support applied.
-    /// </summary>
-    public static SkillData Apply(SkillData skill, IReadOnlyList<SupportData> supports)
+    /// <summary>Applies this support's effects to a skill (a copy from SkillGem.Effective, never the shared one).</summary>
+    public void ApplyTo(SkillData s)
     {
-        SkillData s = skill.Clone();
-        s.supportDamageMultiplier = 1f;
-        s.extraFireFraction = 0f;
-        s.pierceCount = 0;
-
-        var applied = new List<SupportData>();
-        foreach (SupportData support in supports)
-        {
-            if (support == null || !support.CanSupport(skill)) continue;
-            applied.Add(support);
-
-            s.manaCost *= support.manaMultiplier;
-            s.supportDamageMultiplier *= 1f + support.damageMore / 100f;
-            s.projectileCount += support.addedProjectiles;
-            s.pierceCount += support.pierceCount;
-            s.radius *= 1f + support.radiusIncreased / 100f;
-            s.extraFireFraction += support.extraFirePercent / 100f;
-            s.attackSpeedMultiplier *= 1f + support.attackSpeedMore / 100f;
-            s.castTime /= 1f + support.castSpeedMore / 100f;
-        }
-
-        // Without a spread, extra projectiles would fly on top of each other.
-        if (s.projectileCount > 1 && s.spreadAngle <= 0f) s.spreadAngle = DefaultSpread;
-        s.manaCost = Mathf.Round(s.manaCost);
-        s.supports = applied.ToArray();
-        return s;
+        s.manaCost *= manaMultiplier;
+        s.bonusDamageMultiplier *= 1f + damageMore / 100f;
+        s.projectileCount += addedProjectiles;
+        s.pierceCount += pierceCount;
+        s.radius *= 1f + radiusIncreased / 100f;
+        s.extraFireFraction += extraFirePercent / 100f;
+        s.attackSpeedMultiplier *= 1f + attackSpeedMore / 100f;
+        s.castTime /= 1f + castSpeedMore / 100f;
     }
 }
 

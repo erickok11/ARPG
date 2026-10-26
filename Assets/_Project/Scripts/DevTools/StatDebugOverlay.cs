@@ -23,6 +23,9 @@ public class StatDebugOverlay : MonoBehaviour
     private CurrencyPouch pouch;
     private Mana mana;
     private StartingClass startingClass;
+    private CharacterLevel characterLevel;
+    private PlayerController player;
+    private EnemySpawner spawner;
     private GUIStyle labelStyle;
     private readonly StringBuilder text = new StringBuilder();
 
@@ -34,6 +37,13 @@ public class StatDebugOverlay : MonoBehaviour
         pouch = GetComponent<CurrencyPouch>();
         mana = GetComponent<Mana>();
         startingClass = GetComponent<StartingClass>();
+        characterLevel = GetComponent<CharacterLevel>();
+        player = GetComponent<PlayerController>();
+    }
+
+    private void Start()
+    {
+        spawner = FindFirstObjectByType<EnemySpawner>();
     }
 
     private void OnGUI()
@@ -48,15 +58,22 @@ public class StatDebugOverlay : MonoBehaviour
 
         text.Clear();
 
-        if (startingClass != null)
-            text.AppendLine($"<b>{startingClass.Class}</b>");
+        if (startingClass != null || characterLevel != null)
+        {
+            string className = startingClass != null ? startingClass.Class.ToString() : "";
+            string level = characterLevel != null ? $"  Level {characterLevel.Level}" : "";
+            text.AppendLine($"<b>{className}{level}</b>");
+        }
 
         if (health != null)
         {
             string lifeColor = health.Fraction > 0.5f ? "#7f7" : health.Fraction > 0.25f ? "#fd5" : "#f66";
             text.AppendLine($"<b>Life  <color={lifeColor}>{health.Current:0} / {health.Max:0}</color></b>");
             if (health.IsDead)
-                text.AppendLine("<b><color=#f66>YOU DIED</color></b>  <color=#aaa>(stop and press Play again)</color>");
+            {
+                string respawn = player != null ? $"  <color=#aaa>(back in {player.RespawnTimeLeft:0.0}s)</color>" : "";
+                text.AppendLine($"<b><color=#f66>YOU DIED</color></b>{respawn}");
+            }
         }
 
         if (mana != null)
@@ -70,6 +87,13 @@ public class StatDebugOverlay : MonoBehaviour
             foreach (ShardType type in ShardInfo.All)
                 text.Append($"<color={ShardInfo.Hex(type)}>{type} {pouch.Get(type)}</color>     ");
             text.AppendLine();
+        }
+
+        if (spawner != null)
+        {
+            text.AppendLine(spawner.NextWaveIn > 0f
+                ? $"<b>Wave {spawner.Wave}</b>  <color=#aaa>starts in {spawner.NextWaveIn:0.0}s · monster level {spawner.CurrentMonsterLevel}</color>"
+                : $"<b>Wave {spawner.Wave}</b>  <color=#aaa>{spawner.AliveCount} left · monster level {spawner.CurrentMonsterLevel}</color>");
         }
 
         text.AppendLine();
@@ -95,7 +119,7 @@ public class StatDebugOverlay : MonoBehaviour
         text.AppendLine();
         text.AppendLine("<color=#aaa>Q W E R  skills     I  inventory     C  crafting     K  skill gems");
         text.AppendLine("1  +30% increased move speed     3  50% less move speed");
-        text.AppendLine("2  +50 max life     H  take 20 damage     0  remove test modifiers</color>");
+        text.AppendLine("2  +50 max life     H  take 20 damage     L  gain a level     0  remove test modifiers</color>");
 
         var content = new GUIContent(text.ToString().TrimEnd());
         Vector2 size = labelStyle.CalcSize(content);

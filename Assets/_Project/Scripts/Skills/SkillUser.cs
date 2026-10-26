@@ -171,9 +171,9 @@ public class SkillUser : MonoBehaviour
     private DamageResult[] Roll(SkillData skill)
     {
         DamageResult main = skill.IsAttack
-            ? DamageCalculator.RollAttack(stats, skill.damageMultiplier * skill.supportDamageMultiplier)
+            ? DamageCalculator.RollAttack(stats, skill.damageMultiplier * skill.bonusDamageMultiplier)
             : DamageCalculator.RollSpell(stats, skill.parsedDamageType, skill.minDamage, skill.maxDamage,
-                                         skill.supportDamageMultiplier);
+                                         skill.bonusDamageMultiplier);
 
         if (skill.extraFireFraction <= 0f) return new[] { main };
         return new[] { main, DamageCalculator.Extra(main, DamageType.Fire, skill.extraFireFraction) };

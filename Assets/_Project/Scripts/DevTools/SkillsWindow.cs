@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 ///   Top:   your Q / W / E / R slots (click one to empty it).
 ///   Left:  every skill gem you own. Click Q, W, E or R to put it on that slot.
 ///          Click a socketed support to take it out.
+///          Gems on the skill bar (and their supports) gain experience from kills.
 ///   Right: your loose support gems. Click Socket, then click an empty support slot on a skill.
 /// </summary>
 [RequireComponent(typeof(SkillBar), typeof(SkillUser))]
@@ -132,7 +133,7 @@ public class SkillsWindow : MonoBehaviour, IGameWindow
 
         // Left: skill gems
         GUILayout.BeginVertical(GUILayout.Width(skillColumnWidth));
-        GUILayout.Label($"<b>Skill gems</b>  <color=#888>{bar.Gems.Count} owned · Q W E R puts one on that slot</color>", rowLabelStyle);
+        GUILayout.Label($"<b>Skill gems</b>  <color=#888>{bar.Gems.Count} owned · gems on Q W E R gain experience</color>", rowLabelStyle);
         scroll = GUILayout.BeginScrollView(scroll);
 
         if (bar.Gems.Count == 0)
@@ -184,7 +185,7 @@ public class SkillsWindow : MonoBehaviour, IGameWindow
         GUILayout.BeginVertical(GUI.skin.box);
 
         GUILayout.BeginHorizontal();
-        GUILayout.Label($"<b><color={SkillDatabase.GemHex(skill)}>{skill.name}</color></b>  <color=#777>Level {gem.level}</color>", rowLabelStyle);
+        GUILayout.Label($"<b><color={SkillDatabase.GemHex(skill)}>{skill.name}</color></b>  {LevelText(gem)}", rowLabelStyle);
         GUILayout.FlexibleSpace();
 
         int current = bar.SlotOf(gem);
@@ -220,7 +221,7 @@ public class SkillsWindow : MonoBehaviour, IGameWindow
             if (i < gem.supports.Count)
             {
                 SupportGem support = gem.supports[i];
-                string text = $"<color={SupportDatabase.GemHex(support.Data)}>{support.Name}</color>  <color=#777>x</color>";
+                string text = $"<color={SupportDatabase.GemHex(support.Data)}>{support.Name}</color> <color=#777>{support.level}  x</color>";
                 if (GUILayout.Button(text, buttonStyle, GUILayout.Width(slotWidth)))
                     pending = () => bar.Unsocket(support);
             }
@@ -253,7 +254,7 @@ public class SkillsWindow : MonoBehaviour, IGameWindow
         GUILayout.BeginVertical(GUI.skin.box);
 
         GUILayout.BeginHorizontal();
-        GUILayout.Label($"<b><color={SupportDatabase.GemHex(data)}>{data.name}</color></b>", rowLabelStyle);
+        GUILayout.Label($"<b><color={SupportDatabase.GemHex(data)}>{data.name}</color></b>  {LevelText(support)}", rowLabelStyle);
         GUILayout.FlexibleSpace();
         Color previous = GUI.backgroundColor;
         if (isSelected) GUI.backgroundColor = new Color(1f, 0.83f, 0.3f);
@@ -270,9 +271,13 @@ public class SkillsWindow : MonoBehaviour, IGameWindow
         GUILayout.Space(4f);
     }
 
+    private static string LevelText(Gem gem) => gem.IsMaxLevel
+        ? $"<color=#777>Level {gem.level} (max)</color>"
+        : $"<color=#777>Level {gem.level}  ·  {gem.experience} / {gem.ExperienceToNext} xp</color>";
+
     private string UseText(SkillData skill)
     {
-        float more = skill.supportDamageMultiplier;
+        float more = skill.bonusDamageMultiplier;
         string damage = skill.IsAttack
             ? $"{skill.damageMultiplier * more * 100f:0}% attack damage"
             : $"{skill.minDamage * more:0}-{skill.maxDamage * more:0} {skill.parsedDamageType} damage";

@@ -8,7 +8,8 @@ using UnityEngine.AI;
 public class LootDropper : MonoBehaviour
 {
     [Header("Monster")]
-    [Tooltip("Item level of drops. Higher levels unlock stronger affix tiers (try 60 to see top tiers).")]
+    [Tooltip("Item level of drops. Higher levels unlock stronger affix tiers (try 60 to see top tiers). " +
+             "A MonsterLevel component on the same object overrides this.")]
     [SerializeField, Min(1)] private int monsterLevel = 1;
 
     [Header("Gold")]
@@ -37,6 +38,8 @@ public class LootDropper : MonoBehaviour
     private Health health;
 
     public int MonsterLevel => monsterLevel;
+
+    public void SetMonsterLevel(int level) => monsterLevel = Mathf.Max(1, level);
 
     private void Awake()
     {

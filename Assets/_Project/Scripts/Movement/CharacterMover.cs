@@ -87,6 +87,17 @@ public class CharacterMover : MonoBehaviour
         agent.enabled = false;
     }
 
+    /// <summary>Turn movement back on after DisableMovement (e.g. when respawning), placing the character at a point.</summary>
+    public void EnableMovement(Vector3 position)
+    {
+        if (NavMesh.SamplePosition(position, out NavMeshHit navHit, navMeshSnapDistance, NavMesh.AllAreas))
+            position = navHit.position;
+
+        agent.enabled = true;
+        agent.Warp(position);
+        Stop();
+    }
+
     private void OnStatChanged(StatType type)
     {
         if (type == StatType.MovementSpeed) ApplyMoveSpeed();

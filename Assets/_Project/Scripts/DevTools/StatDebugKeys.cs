@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 ///   2 = +50 flat max life
 ///   3 = 50% less movement speed
 ///   H = take 20 damage
+///   L = gain a level (needs CharacterLevel)
 ///   0 = remove all test modifiers
 /// </summary>
 [RequireComponent(typeof(CharacterStats))]
@@ -14,12 +15,14 @@ public class StatDebugKeys : MonoBehaviour
 {
     private CharacterStats stats;
     private Health health;
+    private CharacterLevel characterLevel;
     private readonly object debugSource = new object();
 
     private void Awake()
     {
         stats = GetComponent<CharacterStats>();
         health = GetComponent<Health>();
+        characterLevel = GetComponent<CharacterLevel>();
     }
 
     private void Update()
@@ -47,6 +50,8 @@ public class StatDebugKeys : MonoBehaviour
             health.TakeDamage(20f);
             Debug.Log($"Life: {health.Current:0}/{health.Max:0}");
         }
+        if (kb.lKey.wasPressedThisFrame && characterLevel != null)
+            characterLevel.DebugGainLevel();
         if (kb.digit0Key.wasPressedThisFrame)
         {
             stats.RemoveAllFromSource(debugSource);

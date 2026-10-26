@@ -9,6 +9,7 @@ public class Health : MonoBehaviour
 {
     public event Action<float> Damaged;   // amount taken
     public event Action Died;
+    public event Action Revived;
     public event Action Changed;          // any change to current or max (for UI)
 
     private CharacterStats stats;
@@ -62,6 +63,17 @@ public class Health : MonoBehaviour
     {
         if (IsDead || amount <= 0f) return;
         current = Mathf.Min(Max, current + amount);
+        Changed?.Invoke();
+    }
+
+    /// <summary>Brings a dead character back with full life.</summary>
+    public void Revive()
+    {
+        if (!IsDead) return;
+        IsDead = false;
+        current = Max;
+        lastMax = current;
+        Revived?.Invoke();
         Changed?.Invoke();
     }
 

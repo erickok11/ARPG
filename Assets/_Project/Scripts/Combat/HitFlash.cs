@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// Flashes the character's color when it takes damage, and turns it gray on death.
+/// Flashes the character's color when it takes damage, turns it gray on death, and back when revived.
 /// </summary>
 [RequireComponent(typeof(Health))]
 public class HitFlash : MonoBehaviour
@@ -28,12 +28,14 @@ public class HitFlash : MonoBehaviour
     {
         health.Damaged += OnDamaged;
         health.Died += OnDied;
+        health.Revived += OnRevived;
     }
 
     private void OnDisable()
     {
         health.Damaged -= OnDamaged;
         health.Died -= OnDied;
+        health.Revived -= OnRevived;
     }
 
     private void Update()
@@ -55,6 +57,12 @@ public class HitFlash : MonoBehaviour
     {
         timer = 0f;
         SetColor(deadColor);
+    }
+
+    private void OnRevived()
+    {
+        timer = 0f;
+        RestoreColors();
     }
 
     private void SetColor(Color color)

@@ -106,7 +106,7 @@ public static class SkillDatabase
             if (s.projectileSpeed <= 0f) s.projectileSpeed = 15f;
             if (s.range <= 0f) s.range = 2f;
             if (s.radius <= 0f) s.radius = s.skillKind == SkillKind.Slam ? 2f : 0.4f;
-            s.supportDamageMultiplier = 1f;
+            s.bonusDamageMultiplier = 1f;
             s.supports = Array.Empty<SupportData>();
             s.parsedColor = ColorUtility.TryParseHtmlString(s.color, out Color c) ? c : Color.white;
 
