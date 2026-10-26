@@ -10,7 +10,7 @@ using UnityEngine.InputSystem;
 /// Crafting an equipped item updates your stats immediately.
 /// </summary>
 [RequireComponent(typeof(Crafter), typeof(Inventory), typeof(Equipment))]
-public class CraftingWindow : MonoBehaviour
+public class CraftingWindow : MonoBehaviour, IGameWindow
 {
     [SerializeField] private bool startOpen = false;
     [SerializeField] private int fontSize = 14;
@@ -26,7 +26,6 @@ public class CraftingWindow : MonoBehaviour
     private Equipment equipment;
     private Wallet wallet;
     private CurrencyPouch pouch;
-    private InventoryWindow inventoryWindow;
 
     private bool isOpen;
     private Item selected;
@@ -52,11 +51,16 @@ public class CraftingWindow : MonoBehaviour
         equipment = GetComponent<Equipment>();
         wallet = GetComponent<Wallet>();
         pouch = GetComponent<CurrencyPouch>();
-        inventoryWindow = GetComponent<InventoryWindow>();
         isOpen = startOpen;
     }
 
-    private void OnDisable() => ClickBlocker.Clear(this);
+    private void OnEnable() => GameWindows.Register(this);
+
+    private void OnDisable()
+    {
+        GameWindows.Unregister(this);
+        ClickBlocker.Clear(this);
+    }
 
     public void SetOpen(bool open)
     {
@@ -67,10 +71,17 @@ public class CraftingWindow : MonoBehaviour
     private void Update()
     {
         Keyboard kb = Keyboard.current;
-        if (kb == null || !kb.cKey.wasPressedThisFrame) return;
+        if (kb == null) return;
 
-        SetOpen(!isOpen);
-        if (isOpen && inventoryWindow != null) inventoryWindow.SetOpen(false);
+        if (kb.cKey.wasPressedThisFrame)
+        {
+            SetOpen(!isOpen);
+            if (isOpen) GameWindows.CloseOthers(this);
+        }
+        else if (isOpen && kb.escapeKey.wasPressedThisFrame)
+        {
+            SetOpen(false);
+        }
     }
 
     private void OnGUI()

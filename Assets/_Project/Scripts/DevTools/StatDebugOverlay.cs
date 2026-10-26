@@ -21,6 +21,8 @@ public class StatDebugOverlay : MonoBehaviour
     private Health health;
     private Wallet wallet;
     private CurrencyPouch pouch;
+    private Mana mana;
+    private StartingClass startingClass;
     private GUIStyle labelStyle;
     private readonly StringBuilder text = new StringBuilder();
 
@@ -30,6 +32,8 @@ public class StatDebugOverlay : MonoBehaviour
         health = GetComponent<Health>();
         wallet = GetComponent<Wallet>();
         pouch = GetComponent<CurrencyPouch>();
+        mana = GetComponent<Mana>();
+        startingClass = GetComponent<StartingClass>();
     }
 
     private void OnGUI()
@@ -44,6 +48,9 @@ public class StatDebugOverlay : MonoBehaviour
 
         text.Clear();
 
+        if (startingClass != null)
+            text.AppendLine($"<b>{startingClass.Class}</b>");
+
         if (health != null)
         {
             string lifeColor = health.Fraction > 0.5f ? "#7f7" : health.Fraction > 0.25f ? "#fd5" : "#f66";
@@ -51,6 +58,9 @@ public class StatDebugOverlay : MonoBehaviour
             if (health.IsDead)
                 text.AppendLine("<b><color=#f66>YOU DIED</color></b>  <color=#aaa>(stop and press Play again)</color>");
         }
+
+        if (mana != null)
+            text.AppendLine($"<b>Mana  <color=#79f>{mana.Current:0} / {mana.Max:0}</color></b>");
 
         if (wallet != null)
             text.AppendLine($"<b>Gold  <color=#fc3>{wallet.Gold}</color></b>");
@@ -83,7 +93,7 @@ public class StatDebugOverlay : MonoBehaviour
         }
 
         text.AppendLine();
-        text.AppendLine("<color=#aaa>I  inventory     C  crafting");
+        text.AppendLine("<color=#aaa>Q W E R  skills     I  inventory     C  crafting     K  skill gems");
         text.AppendLine("1  +30% increased move speed     3  50% less move speed");
         text.AppendLine("2  +50 max life     H  take 20 damage     0  remove test modifiers</color>");
 

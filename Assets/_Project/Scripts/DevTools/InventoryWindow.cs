@@ -10,7 +10,7 @@ using UnityEngine.InputSystem;
 ///   Hover anything to see its tooltip.
 /// </summary>
 [RequireComponent(typeof(Inventory), typeof(Equipment))]
-public class InventoryWindow : MonoBehaviour
+public class InventoryWindow : MonoBehaviour, IGameWindow
 {
     [SerializeField] private bool startOpen = false;
     [SerializeField] private int fontSize = 14;
@@ -19,7 +19,6 @@ public class InventoryWindow : MonoBehaviour
 
     private Inventory inventory;
     private Equipment equipment;
-    private CraftingWindow craftingWindow;
     private bool isOpen;
     private Vector2 scroll;
     private Item hovered;
@@ -33,11 +32,16 @@ public class InventoryWindow : MonoBehaviour
     {
         inventory = GetComponent<Inventory>();
         equipment = GetComponent<Equipment>();
-        craftingWindow = GetComponent<CraftingWindow>();
         isOpen = startOpen;
     }
 
-    private void OnDisable() => ClickBlocker.Clear(this);
+    private void OnEnable() => GameWindows.Register(this);
+
+    private void OnDisable()
+    {
+        GameWindows.Unregister(this);
+        ClickBlocker.Clear(this);
+    }
 
     public void SetOpen(bool open)
     {
@@ -48,10 +52,17 @@ public class InventoryWindow : MonoBehaviour
     private void Update()
     {
         Keyboard kb = Keyboard.current;
-        if (kb == null || !kb.iKey.wasPressedThisFrame) return;
+        if (kb == null) return;
 
-        SetOpen(!isOpen);
-        if (isOpen && craftingWindow != null) craftingWindow.SetOpen(false);
+        if (kb.iKey.wasPressedThisFrame)
+        {
+            SetOpen(!isOpen);
+            if (isOpen) GameWindows.CloseOthers(this);
+        }
+        else if (isOpen && kb.escapeKey.wasPressedThisFrame)
+        {
+            SetOpen(false);
+        }
     }
 
     private void OnGUI()
@@ -75,7 +86,7 @@ public class InventoryWindow : MonoBehaviour
         EquipSlot? toUnequip = null;
 
         GUILayout.BeginArea(new Rect(window.x + 10f, window.y + 10f, window.width - 20f, window.height - 20f));
-        GUILayout.Label("<b>Inventory</b>   <color=#888>I to close · C for crafting · click backpack items to equip · click equipped items to unequip</color>", headerStyle);
+        GUILayout.Label("<b>Inventory</b>   <color=#888>I to close · C crafting · K skills · click backpack items to equip · click equipped items to unequip</color>", headerStyle);
         GUILayout.Space(6f);
         GUILayout.BeginHorizontal();
 

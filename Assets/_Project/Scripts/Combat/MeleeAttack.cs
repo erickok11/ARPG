@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 /// <summary>
@@ -8,9 +7,6 @@ using UnityEngine;
 [RequireComponent(typeof(CharacterStats))]
 public class MeleeAttack : MonoBehaviour
 {
-    /// <summary>Fires for every successful hit by anyone (used by damage numbers).</summary>
-    public static event Action<MeleeAttack, Health, DamageResult> AnyHit;
-
     [Tooltip("Max distance (center to center) to land a hit.")]
     [SerializeField] private float range = 2f;
 
@@ -52,8 +48,7 @@ public class MeleeAttack : MonoBehaviour
         cooldown = 1f / attacksPerSecond;
 
         DamageResult result = DamageCalculator.RollAttack(stats);
-        target.TakeDamage(result.Amount);
-        AnyHit?.Invoke(this, target, result);
+        Combat.Hit(gameObject, target, result);
         return true;
     }
 }

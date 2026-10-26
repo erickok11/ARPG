@@ -4,8 +4,9 @@ using UnityEngine;
 /// <summary>
 /// Temporary floating damage numbers. Creates itself automatically when you press Play,
 /// so you don't need to add it to anything.
-///   White  = normal hit on a monster
-///   Yellow = critical hit
+///   White  = physical hit on a monster
+///   Yellow = physical critical hit
+///   Orange = fire (crits are bigger and end in "!")
 ///   Red    = damage taken by the player
 /// </summary>
 public class DamageNumbers : MonoBehaviour
@@ -46,15 +47,13 @@ public class DamageNumbers : MonoBehaviour
         instance = this;
     }
 
-    private void OnEnable() => MeleeAttack.AnyHit += OnHit;
-    private void OnDisable() => MeleeAttack.AnyHit -= OnHit;
+    private void OnEnable() => Combat.AnyHit += OnHit;
+    private void OnDisable() => Combat.AnyHit -= OnHit;
 
-    private void OnHit(MeleeAttack attacker, Health target, DamageResult result)
+    private void OnHit(GameObject attacker, Health target, DamageResult result)
     {
         bool targetIsPlayer = target.GetComponent<PlayerController>() != null;
-        Color color = targetIsPlayer ? new Color(1f, 0.35f, 0.35f)
-                    : result.IsCrit ? new Color(1f, 0.85f, 0.2f)
-                    : Color.white;
+        Color color = targetIsPlayer ? new Color(1f, 0.35f, 0.35f) : ColorFor(result);
 
         Vector2 jitter = Random.insideUnitCircle * 0.3f;
         entries.Add(new Entry
@@ -65,6 +64,16 @@ public class DamageNumbers : MonoBehaviour
             isCrit = result.IsCrit,
         });
     }
+
+    /// <summary>White = physical, yellow = physical crit, orange = fire, light blue = cold, etc.</summary>
+    private static Color ColorFor(DamageResult result) => result.Type switch
+    {
+        DamageType.Fire => new Color(1f, 0.55f, 0.2f),
+        DamageType.Cold => new Color(0.55f, 0.8f, 1f),
+        DamageType.Lightning => new Color(1f, 1f, 0.45f),
+        DamageType.Chaos => new Color(0.8f, 0.45f, 1f),
+        _ => result.IsCrit ? new Color(1f, 0.85f, 0.2f) : Color.white,
+    };
 
     private void Update()
     {

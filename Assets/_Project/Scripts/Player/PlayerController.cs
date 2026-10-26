@@ -1,13 +1,17 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 /// <summary>
-/// Player mouse input:
-///   Click ground        -> walk there (hold to keep walking toward the cursor)
-///   Click an enemy      -> walk into range and keep attacking until it dies or you click elsewhere
-///   Click an item label -> walk to the item and pick it up
-/// Clicks inside open windows (inventory, crafting) are ignored here.
+/// Player input:
+///   Left-click ground        -> walk there (hold to keep walking toward the cursor)
+///   Left-click an enemy      -> walk into range and basic-attack until it dies or you click elsewhere
+///   Left-click an item label -> walk to the item and pick it up
+///   Q / W / E / R            -> use the skill on that slot (hold to keep using it)
+///       Strike skills target the enemy under (or near) the cursor and walk into range first.
+///       Projectile and Slam skills fire toward the cursor right away.
+/// Clicks on open windows and the HUD are ignored here.
 /// </summary>
 [RequireComponent(typeof(CharacterMover), typeof(MeleeAttack), typeof(Health))]
 public class PlayerController : MonoBehaviour
@@ -23,6 +27,10 @@ public class PlayerController : MonoBehaviour
     [Tooltip("How close you need to be to pick up an item.")]
     [SerializeField] private float pickupRange = 1.5f;
 
+    [Header("Skills")]
+    [Tooltip("If a Strike skill is used with no enemy under the cursor, use the nearest enemy within this distance of the cursor.")]
+    [SerializeField] private float strikeTargetAssist = 2.5f;
+
     [Header("Timing")]
     [Tooltip("While holding the button on the ground, how often to update the destination.")]
     [SerializeField] private float holdRepathInterval = 0.05f;
@@ -33,9 +41,12 @@ public class PlayerController : MonoBehaviour
     private MeleeAttack attack;
     private Health health;
     private Inventory inventory;
+    private SkillUser skillUser;
     private Camera cam;
 
     private Health attackTarget;
+    private int targetSkillSlot = -1;  // -1 = basic attack; otherwise the skill slot being used on attackTarget
+    private bool repeatSkill;          // keep using the skill on the target while its key is held
     private ItemPickup pickupTarget;
     private float repathTimer;
     private bool pressStartedOverUI;
@@ -48,6 +59,7 @@ public class PlayerController : MonoBehaviour
         attack = GetComponent<MeleeAttack>();
         health = GetComponent<Health>();
         inventory = GetComponent<Inventory>();
+        skillUser = GetComponent<SkillUser>();
     }
 
     private void OnEnable() => health.Died += OnDied;
@@ -65,10 +77,94 @@ public class PlayerController : MonoBehaviour
         if (health.IsDead) return;
 
         repathTimer -= Time.deltaTime;
+
+        // Mid-swing or mid-cast: you can't do anything else until it finishes.
+        if (skillUser != null && skillUser.IsBusy) return;
+
+        HandleSkillKeys();
         HandleMouse();
         UpdateAttack();
         UpdatePickup();
     }
+
+    // -----------------------------------------------------------------
+    // Skills
+    // -----------------------------------------------------------------
+
+    private void HandleSkillKeys()
+    {
+        Keyboard kb = Keyboard.current;
+        if (skillUser == null || kb == null || cam == null) return;
+
+        // Letting go of the key stops repeating (the current target still gets one use).
+        if (targetSkillSlot >= 0 && !SkillKey(kb, targetSkillSlot).isPressed) repeatSkill = false;
+
+        for (int slot = 0; slot < SkillBar.SlotCount; slot++)
+        {
+            KeyControl key = SkillKey(kb, slot);
+            if (!key.isPressed || !skillUser.HasSkill(slot)) continue;
+            bool pressedThisFrame = key.wasPressedThisFrame;
+
+            if (skillUser.NeedsTarget(slot))
+            {
+                // Already walking to / hitting a target with this skill: keep going.
+                if (!pressedThisFrame && targetSkillSlot == slot && attackTarget != null) return;
+
+                Health target = FindStrikeTarget();
+                if (target == null)
+                {
+                    if (pressedThisFrame) skillUser.ReportNoTarget();
+                    return;
+                }
+
+                attackTarget = target;
+                targetSkillSlot = slot;
+                repeatSkill = true;
+                pickupTarget = null;
+                repathTimer = 0f;
+                return;
+            }
+
+            // Projectiles and slams go toward the cursor immediately.
+            if (TryGetCursorGround(out Vector3 point))
+            {
+                ClearAttackTarget();
+                pickupTarget = null;
+                skillUser.TryUseAt(slot, point);
+            }
+            return;
+        }
+    }
+
+    private static KeyControl SkillKey(Keyboard kb, int slot) => slot switch
+    {
+        0 => kb.qKey,
+        1 => kb.wKey,
+        2 => kb.eKey,
+        _ => kb.rKey,
+    };
+
+    private Health FindStrikeTarget()
+    {
+        Health underCursor = EnemyUnderCursor();
+        if (underCursor != null) return underCursor;
+        if (!TryGetCursorGround(out Vector3 point)) return null;
+
+        Health nearest = null;
+        float best = float.MaxValue;
+        foreach (Collider c in Physics.OverlapSphere(point, strikeTargetAssist, enemyMask))
+        {
+            Health h = c.GetComponentInParent<Health>();
+            if (h == null || h.IsDead) continue;
+            float d = (h.transform.position - point).sqrMagnitude;
+            if (d < best) { best = d; nearest = h; }
+        }
+        return nearest;
+    }
+
+    // -----------------------------------------------------------------
+    // Mouse
+    // -----------------------------------------------------------------
 
     private void HandleMouse()
     {
@@ -88,7 +184,7 @@ public class PlayerController : MonoBehaviour
             if (ItemPickup.TryGetLabelAt(guiPosition, out ItemPickup clickedItem))
             {
                 pickupTarget = clickedItem;
-                attackTarget = null;
+                ClearAttackTarget();
                 repathTimer = 0f;
                 return;
             }
@@ -103,11 +199,12 @@ public class PlayerController : MonoBehaviour
             if (clickedEnemy != null && !clickedEnemy.IsDead)
             {
                 attackTarget = clickedEnemy;
+                targetSkillSlot = -1;   // left-click = basic attack
                 repathTimer = 0f;
             }
             else
             {
-                attackTarget = null;
+                ClearAttackTarget();
                 mover.MoveTo(hit.point);
                 repathTimer = holdRepathInterval;
             }
@@ -122,22 +219,44 @@ public class PlayerController : MonoBehaviour
             mover.MoveTo(groundHit.point);
     }
 
+    // -----------------------------------------------------------------
+    // Attacking a target (basic attack or Strike skill)
+    // -----------------------------------------------------------------
+
     private void UpdateAttack()
     {
         if (attackTarget == null) return;
 
         if (attackTarget.IsDead)
         {
-            attackTarget = null;
+            ClearAttackTarget();
             mover.Stop();
             return;
         }
 
-        if (attack.InRange(attackTarget.transform))
+        bool usingSkill = targetSkillSlot >= 0 && skillUser != null;
+        float range = usingSkill ? skillUser.RangeOf(targetSkillSlot) : attack.Range;
+
+        if (FlatDistance(attackTarget.transform.position) <= range)
         {
             mover.Stop();
             mover.FaceTowards(attackTarget.transform.position);
-            attack.TryAttack(attackTarget);
+
+            if (!usingSkill)
+            {
+                attack.TryAttack(attackTarget);
+                return;
+            }
+
+            SkillUseResult result = skillUser.TryUseOnTarget(targetSkillSlot, attackTarget);
+            if (result == SkillUseResult.Used)
+            {
+                if (!repeatSkill) ClearAttackTarget();
+            }
+            else if (result != SkillUseResult.Busy)
+            {
+                ClearAttackTarget(); // no mana, missing requirements, etc. (the HUD shows why)
+            }
         }
         else if (repathTimer <= 0f)
         {
@@ -146,14 +265,22 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private void ClearAttackTarget()
+    {
+        attackTarget = null;
+        targetSkillSlot = -1;
+        repeatSkill = false;
+    }
+
+    // -----------------------------------------------------------------
+    // Items
+    // -----------------------------------------------------------------
+
     private void UpdatePickup()
     {
         if (pickupTarget == null) return;
 
-        Vector3 offset = pickupTarget.transform.position - transform.position;
-        offset.y = 0f;
-
-        if (offset.sqrMagnitude <= pickupRange * pickupRange)
+        if (FlatDistance(pickupTarget.transform.position) <= pickupRange)
         {
             mover.Stop();
             if (inventory != null && inventory.Add(pickupTarget.Item))
@@ -169,9 +296,45 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    // -----------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------
+
+    private bool TryGetCursorGround(out Vector3 point)
+    {
+        point = default;
+        Mouse mouse = Mouse.current;
+        if (mouse == null || cam == null) return false;
+
+        Ray ray = cam.ScreenPointToRay(mouse.position.ReadValue());
+        if (!Physics.Raycast(ray, out RaycastHit hit, maxRayDistance, groundMask)) return false;
+        point = hit.point;
+        return true;
+    }
+
+    private Health EnemyUnderCursor()
+    {
+        Mouse mouse = Mouse.current;
+        if (mouse == null || cam == null) return null;
+
+        Ray ray = cam.ScreenPointToRay(mouse.position.ReadValue());
+        if (!Physics.Raycast(ray, out RaycastHit hit, maxRayDistance, groundMask | enemyMask)) return null;
+        if (!IsOnLayer(hit.collider.gameObject, enemyMask)) return null;
+
+        Health h = hit.collider.GetComponentInParent<Health>();
+        return h != null && !h.IsDead ? h : null;
+    }
+
+    private float FlatDistance(Vector3 point)
+    {
+        Vector3 offset = point - transform.position;
+        offset.y = 0f;
+        return offset.magnitude;
+    }
+
     private void OnDied()
     {
-        attackTarget = null;
+        ClearAttackTarget();
         pickupTarget = null;
         mover.DisableMovement();
         Debug.Log("You died. Stop and press Play to try again.");

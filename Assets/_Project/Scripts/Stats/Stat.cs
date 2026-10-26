@@ -43,7 +43,7 @@ public class Stat
         {
             if (dirty)
             {
-                cachedValue = Calculate();
+                cachedValue = Compute(baseValue);
                 dirty = false;
             }
             return cachedValue;
@@ -77,7 +77,14 @@ public class Stat
         Changed?.Invoke(this);
     }
 
-    private float Calculate()
+    /// <summary>
+    /// Runs a different starting value through this stat's modifiers, without changing the stat.
+    /// Skills use this, e.g. Fireball's own base damage through your Fire Damage bonuses,
+    /// or a spell's cast rate through your Cast Speed bonuses.
+    /// </summary>
+    public float Evaluate(float startingValue) => Compute(startingValue);
+
+    private float Compute(float startingValue)
     {
         float flat = 0f;
         float increased = 0f;
@@ -101,6 +108,6 @@ public class Stat
 
         // Reduced can't push a stat below zero by itself.
         float increasedMultiplier = Mathf.Max(0f, 1f + increased / 100f);
-        return (baseValue + flat) * increasedMultiplier * more;
+        return (startingValue + flat) * increasedMultiplier * more;
     }
 }
