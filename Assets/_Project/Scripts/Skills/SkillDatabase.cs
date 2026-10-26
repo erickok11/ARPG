@@ -26,24 +26,29 @@ public static class SkillDatabase
     }
 
     /// <summary>Gem color by main attribute: red = Strength, green = Dexterity, blue = Intelligence.</summary>
-    public static Color GemColor(SkillData skill)
+    public static Color GemColor(SkillData skill) =>
+        skill == null ? Color.white : GemColor(skill.reqStr, skill.reqDex, skill.reqInt);
+
+    /// <summary>Gem color for a set of attribute requirements (skill and support gems share these).</summary>
+    public static Color GemColor(int reqStr, int reqDex, int reqInt)
     {
-        if (skill == null) return Color.white;
-        if (skill.reqStr >= skill.reqDex && skill.reqStr >= skill.reqInt && skill.reqStr > 0) return new Color(0.95f, 0.38f, 0.32f);
-        if (skill.reqDex >= skill.reqInt && skill.reqDex > 0) return new Color(0.42f, 0.88f, 0.42f);
-        if (skill.reqInt > 0) return new Color(0.42f, 0.62f, 1f);
+        if (reqStr >= reqDex && reqStr >= reqInt && reqStr > 0) return new Color(0.95f, 0.38f, 0.32f);
+        if (reqDex >= reqInt && reqDex > 0) return new Color(0.42f, 0.88f, 0.42f);
+        if (reqInt > 0) return new Color(0.42f, 0.62f, 1f);
         return new Color(0.85f, 0.85f, 0.85f);
     }
 
     public static string GemHex(SkillData skill) => "#" + ColorUtility.ToHtmlStringRGB(GemColor(skill));
 
     /// <summary>"attack, melee" -> "Attack, Melee"</summary>
-    public static string TagText(SkillData skill)
+    public static string TagText(SkillData skill) => TagText(skill?.tags);
+
+    public static string TagText(string[] tags)
     {
-        if (skill?.tags == null || skill.tags.Length == 0) return "";
+        if (tags == null || tags.Length == 0) return "";
         TextInfo text = CultureInfo.InvariantCulture.TextInfo;
-        var parts = new string[skill.tags.Length];
-        for (int i = 0; i < skill.tags.Length; i++) parts[i] = text.ToTitleCase(skill.tags[i]);
+        var parts = new string[tags.Length];
+        for (int i = 0; i < tags.Length; i++) parts[i] = text.ToTitleCase(tags[i]);
         return string.Join(", ", parts);
     }
 
@@ -101,6 +106,8 @@ public static class SkillDatabase
             if (s.projectileSpeed <= 0f) s.projectileSpeed = 15f;
             if (s.range <= 0f) s.range = 2f;
             if (s.radius <= 0f) s.radius = s.skillKind == SkillKind.Slam ? 2f : 0.4f;
+            s.supportDamageMultiplier = 1f;
+            s.supports = Array.Empty<SupportData>();
             s.parsedColor = ColorUtility.TryParseHtmlString(s.color, out Color c) ? c : Color.white;
 
             skills[s.id] = s;

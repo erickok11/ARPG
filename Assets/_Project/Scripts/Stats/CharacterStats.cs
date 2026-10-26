@@ -4,7 +4,7 @@ using UnityEngine;
 
 /// <summary>
 /// Holds every stat for one character (player or monster).
-/// Items, passive nodes, supports and buffs all talk to this component.
+/// Items, passive nodes and buffs all talk to this component (support gems change the skill instead).
 /// </summary>
 public class CharacterStats : MonoBehaviour
 {

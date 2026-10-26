@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -15,6 +16,13 @@ public static class Combat
         if (target == null || target.IsDead) return;
         target.TakeDamage(result.Amount);
         AnyHit?.Invoke(attacker, target, result);
+    }
+
+    /// <summary>Deals several results as one hit, e.g. a skill's damage plus extra Fire damage from a support.</summary>
+    public static void Hit(GameObject attacker, Health target, IReadOnlyList<DamageResult> results)
+    {
+        foreach (DamageResult result in results)
+            Hit(attacker, target, result);
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

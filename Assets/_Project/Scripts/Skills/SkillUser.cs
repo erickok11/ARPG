@@ -17,6 +17,7 @@ public enum SkillUseResult
 /// <summary>
 /// Uses the skills on a character's SkillBar: checks requirements and mana, spends mana,
 /// works out timing from attack or cast speed, and creates the hits, projectiles and slams.
+/// Skills are used with their socketed supports already applied (SkillGem.Effective).
 /// </summary>
 [RequireComponent(typeof(CharacterStats), typeof(Mana), typeof(SkillBar))]
 public class SkillUser : MonoBehaviour
@@ -61,7 +62,7 @@ public class SkillUser : MonoBehaviour
     // Queries (used by PlayerController and the UI)
     // -----------------------------------------------------------------
 
-    public SkillData SkillIn(int slot) => bar.Get(slot)?.Data;
+    public SkillData SkillIn(int slot) => bar.Get(slot)?.Effective;
     public bool HasSkill(int slot) => SkillIn(slot) != null;
     public bool NeedsTarget(int slot) => SkillIn(slot)?.skillKind == SkillKind.Strike;
     public float RangeOf(int slot) => SkillIn(slot)?.range ?? 0f;
@@ -71,9 +72,15 @@ public class SkillUser : MonoBehaviour
         missing = null;
         if (skill == null) return false;
 
-        if (!Meets(StatType.Strength, skill.reqStr, ref missing)) return false;
-        if (!Meets(StatType.Dexterity, skill.reqDex, ref missing)) return false;
-        if (!Meets(StatType.Intelligence, skill.reqInt, ref missing)) return false;
+        if (!MeetsAttributes(skill.reqStr, skill.reqDex, skill.reqInt, ref missing)) return false;
+
+        // Every socketed support has to be usable too.
+        foreach (SupportData support in skill.supports)
+        {
+            if (MeetsAttributes(support.reqStr, support.reqDex, support.reqInt, ref missing)) continue;
+            missing = $"{support.name}: {missing}";
+            return false;
+        }
         return true;
     }
 
@@ -160,9 +167,17 @@ public class SkillUser : MonoBehaviour
         SkillUsed?.Invoke(slot, skill);
     }
 
-    private DamageResult Roll(SkillData skill) => skill.IsAttack
-        ? DamageCalculator.RollAttack(stats, skill.damageMultiplier)
-        : DamageCalculator.RollSpell(stats, skill.parsedDamageType, skill.minDamage, skill.maxDamage);
+    /// <summary>One hit's damage. Usually a single result; supports like Added Fire Damage add a second.</summary>
+    private DamageResult[] Roll(SkillData skill)
+    {
+        DamageResult main = skill.IsAttack
+            ? DamageCalculator.RollAttack(stats, skill.damageMultiplier * skill.supportDamageMultiplier)
+            : DamageCalculator.RollSpell(stats, skill.parsedDamageType, skill.minDamage, skill.maxDamage,
+                                         skill.supportDamageMultiplier);
+
+        if (skill.extraFireFraction <= 0f) return new[] { main };
+        return new[] { main, DamageCalculator.Extra(main, DamageType.Fire, skill.extraFireFraction) };
+    }
 
     private void Strike(SkillData skill, Health target)
     {
@@ -181,7 +196,7 @@ public class SkillUser : MonoBehaviour
         {
             Vector3 d = Quaternion.Euler(0f, startAngle + skill.spreadAngle * i, 0f) * direction;
             Projectile.Spawn(gameObject, origin + d * 0.6f, d, skill.projectileSpeed, skill.range,
-                             skill.radius, skill.parsedColor, Roll(skill), targetMask, obstacleMask);
+                             skill.radius, skill.parsedColor, Roll(skill), skill.pierceCount, targetMask, obstacleMask);
         }
     }
 
@@ -226,6 +241,11 @@ public class SkillUser : MonoBehaviour
         if (direction.sqrMagnitude > 0.0001f)
             transform.rotation = Quaternion.LookRotation(direction);
     }
+
+    private bool MeetsAttributes(int str, int dex, int intel, ref string missing) =>
+        Meets(StatType.Strength, str, ref missing) &&
+        Meets(StatType.Dexterity, dex, ref missing) &&
+        Meets(StatType.Intelligence, intel, ref missing);
 
     private bool Meets(StatType attribute, int required, ref string missing)
     {

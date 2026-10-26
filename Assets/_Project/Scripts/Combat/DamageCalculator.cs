@@ -32,13 +32,28 @@ public static class DamageCalculator
 
     /// <summary>
     /// Spell damage: the skill's own base damage, run through your bonuses for that damage type
-    /// (e.g. "increased Fire Damage" boosts Fireball).
+    /// (e.g. "increased Fire Damage" boosts Fireball). damageMultiplier comes from supports.
     /// </summary>
-    public static DamageResult RollSpell(CharacterStats attacker, DamageType type, float minDamage, float maxDamage)
+    public static DamageResult RollSpell(CharacterStats attacker, DamageType type, float minDamage, float maxDamage,
+                                         float damageMultiplier = 1f)
     {
         float baseRoll = Random.Range(minDamage, Mathf.Max(minDamage, maxDamage));
-        float damage = attacker.Get(StatFor(type)).Evaluate(baseRoll);
+        float damage = attacker.Get(StatFor(type)).Evaluate(baseRoll) * damageMultiplier;
         return Finish(attacker, damage, type);
+    }
+
+    /// <summary>
+    /// Extra damage of another type based on a hit that was already rolled
+    /// (e.g. "30% of damage as extra Fire"). It crits when the original hit crits.
+    /// </summary>
+    public static DamageResult Extra(DamageResult from, DamageType type, float fraction)
+    {
+        return new DamageResult
+        {
+            Amount = Mathf.Max(1f, Mathf.Round(from.Amount * fraction)),
+            IsCrit = from.IsCrit,
+            Type = type,
+        };
     }
 
     public static StatType StatFor(DamageType type) => type switch

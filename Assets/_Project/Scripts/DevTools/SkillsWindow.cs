@@ -4,17 +4,19 @@ using UnityEngine.InputSystem;
 
 /// <summary>
 /// Temporary skills screen. Press K to open/close.
-///   Top:  your Q / W / E / R slots (click one to empty it).
-///   List: every gem you own, with its requirements. Click Q, W, E or R to put it on that slot.
+///   Top:   your Q / W / E / R slots (click one to empty it).
+///   Left:  every skill gem you own. Click Q, W, E or R to put it on that slot.
+///          Click a socketed support to take it out.
+///   Right: your loose support gems. Click Socket, then click an empty support slot on a skill.
 /// </summary>
 [RequireComponent(typeof(SkillBar), typeof(SkillUser))]
 public class SkillsWindow : MonoBehaviour, IGameWindow
 {
     [SerializeField] private bool startOpen = false;
     [SerializeField] private int fontSize = 14;
-    [SerializeField] private float width = 760f;
-    [SerializeField] private float height = 540f;
-    [Tooltip("Shows a button that gives one of every gem for testing.")]
+    [SerializeField] private float width = 900f;
+    [SerializeField] private float height = 580f;
+    [Tooltip("Shows a button that gives one of every skill and support gem for testing.")]
     [SerializeField] private bool showDebugButton = true;
 
     private SkillBar bar;
@@ -23,6 +25,9 @@ public class SkillsWindow : MonoBehaviour, IGameWindow
 
     private bool isOpen;
     private Vector2 scroll;
+    private Vector2 supportScroll;
+    private float skillColumnWidth;
+    private SupportGem selected;   // support picked with Socket, waiting for a slot
     private Action pending;
     private GUIStyle labelStyle;
     private GUIStyle rowLabelStyle;
@@ -49,7 +54,11 @@ public class SkillsWindow : MonoBehaviour, IGameWindow
     public void SetOpen(bool open)
     {
         isOpen = open;
-        if (!open) ClickBlocker.Clear(this);
+        if (!open)
+        {
+            selected = null;
+            ClickBlocker.Clear(this);
+        }
     }
 
     private void Update()
@@ -64,7 +73,8 @@ public class SkillsWindow : MonoBehaviour, IGameWindow
         }
         else if (isOpen && kb.escapeKey.wasPressedThisFrame)
         {
-            SetOpen(false);
+            if (selected != null) selected = null;
+            else SetOpen(false);
         }
     }
 
@@ -81,8 +91,13 @@ public class SkillsWindow : MonoBehaviour, IGameWindow
         ClickBlocker.Set(this, window);
         Fill(window, new Color(0.03f, 0.03f, 0.05f, 0.95f));
 
+        // Only loose supports can be selected.
+        if (selected != null && bar.HostOf(selected) != null) selected = null;
+
         pending = null;
-        GUILayout.BeginArea(new Rect(window.x + 12f, window.y + 10f, window.width - 24f, window.height - 20f));
+        float innerWidth = window.width - 24f;
+        skillColumnWidth = Mathf.Floor(innerWidth * 0.6f);
+        GUILayout.BeginArea(new Rect(window.x + 12f, window.y + 10f, innerWidth, window.height - 20f));
 
         GUILayout.BeginHorizontal();
         GUILayout.Label("<b>Skills</b>   <color=#888>K to close</color>", rowLabelStyle);
@@ -113,8 +128,11 @@ public class SkillsWindow : MonoBehaviour, IGameWindow
         GUILayout.EndHorizontal();
         GUILayout.Space(10f);
 
-        // Owned gems
-        GUILayout.Label($"<b>Your gems</b>  <color=#888>{bar.Gems.Count} owned · click Q, W, E or R to put a gem on that slot</color>", rowLabelStyle);
+        GUILayout.BeginHorizontal();
+
+        // Left: skill gems
+        GUILayout.BeginVertical(GUILayout.Width(skillColumnWidth));
+        GUILayout.Label($"<b>Skill gems</b>  <color=#888>{bar.Gems.Count} owned · Q W E R puts one on that slot</color>", rowLabelStyle);
         scroll = GUILayout.BeginScrollView(scroll);
 
         if (bar.Gems.Count == 0)
@@ -124,6 +142,33 @@ public class SkillsWindow : MonoBehaviour, IGameWindow
             DrawGem(bar.Gems[i]);
 
         GUILayout.EndScrollView();
+        GUILayout.EndVertical();
+
+        GUILayout.Space(8f);
+
+        // Right: loose support gems
+        GUILayout.BeginVertical();
+        int loose = 0;
+        foreach (SupportGem support in bar.Supports)
+            if (bar.HostOf(support) == null) loose++;
+
+        GUILayout.Label($"<b>Support gems</b>  <color=#888>{loose} loose · {bar.Supports.Count - loose} socketed</color>", rowLabelStyle);
+        GUILayout.Label(selected == null
+            ? "<color=#888>Click Socket, then an empty support slot on a skill.</color>"
+            : $"<color=#ffd34d>Socketing {selected.Name}</color><color=#888>: click a highlighted slot, or Esc to cancel.</color>",
+            labelStyle);
+        supportScroll = GUILayout.BeginScrollView(supportScroll);
+
+        if (loose == 0)
+            GUILayout.Label("<color=#666>No loose supports. Monsters sometimes drop them.</color>", labelStyle);
+
+        foreach (SupportGem support in bar.Supports)
+            if (bar.HostOf(support) == null) DrawSupport(support);
+
+        GUILayout.EndScrollView();
+        GUILayout.EndVertical();
+
+        GUILayout.EndHorizontal();
         GUILayout.EndArea();
 
         Action action = pending;
@@ -133,7 +178,7 @@ public class SkillsWindow : MonoBehaviour, IGameWindow
 
     private void DrawGem(SkillGem gem)
     {
-        SkillData skill = gem.Data;
+        SkillData skill = gem.Effective;
         if (skill == null) return;
 
         GUILayout.BeginVertical(GUI.skin.box);
@@ -155,8 +200,71 @@ public class SkillsWindow : MonoBehaviour, IGameWindow
         GUILayout.EndHorizontal();
 
         GUILayout.Label($"<color=#888>{SkillDatabase.TagText(skill)}  ·  {skill.manaCost:0} mana  ·  {UseText(skill)}</color>", labelStyle);
-        GUILayout.Label(RequirementText(skill), rowLabelStyle);
+        GUILayout.Label(RequirementText(skill.reqStr, skill.reqDex, skill.reqInt), rowLabelStyle);
         GUILayout.Label($"<color=#aaa>{skill.description}</color>", labelStyle);
+        DrawSupportSlots(gem);
+
+        GUILayout.EndVertical();
+        GUILayout.Space(4f);
+    }
+
+    private void DrawSupportSlots(SkillGem gem)
+    {
+        string reason = null;
+        bool canSocket = selected != null && bar.CanSocket(gem, selected, out reason);
+        float slotWidth = Mathf.Floor((skillColumnWidth - 40f) / SkillGem.SupportSlots);
+
+        GUILayout.BeginHorizontal();
+        for (int i = 0; i < SkillGem.SupportSlots; i++)
+        {
+            if (i < gem.supports.Count)
+            {
+                SupportGem support = gem.supports[i];
+                string text = $"<color={SupportDatabase.GemHex(support.Data)}>{support.Name}</color>  <color=#777>x</color>";
+                if (GUILayout.Button(text, buttonStyle, GUILayout.Width(slotWidth)))
+                    pending = () => bar.Unsocket(support);
+            }
+            else if (canSocket)
+            {
+                SupportGem support = selected;
+                Color previous = GUI.backgroundColor;
+                GUI.backgroundColor = new Color(1f, 0.83f, 0.3f);
+                if (GUILayout.Button("<color=#ffd34d>Socket here</color>", buttonStyle, GUILayout.Width(slotWidth)))
+                    pending = () => { if (bar.Socket(gem, support)) selected = null; };
+                GUI.backgroundColor = previous;
+            }
+            else
+            {
+                GUILayout.Label("<color=#555>empty support slot</color>", rowLabelStyle, GUILayout.Width(slotWidth));
+            }
+        }
+        GUILayout.EndHorizontal();
+
+        if (selected != null && !canSocket && !string.IsNullOrEmpty(reason))
+            GUILayout.Label($"<color=#f66>Can't socket {selected.Name}: {reason}</color>", labelStyle);
+    }
+
+    private void DrawSupport(SupportGem support)
+    {
+        SupportData data = support.Data;
+        if (data == null) return;
+
+        bool isSelected = support == selected;
+        GUILayout.BeginVertical(GUI.skin.box);
+
+        GUILayout.BeginHorizontal();
+        GUILayout.Label($"<b><color={SupportDatabase.GemHex(data)}>{data.name}</color></b>", rowLabelStyle);
+        GUILayout.FlexibleSpace();
+        Color previous = GUI.backgroundColor;
+        if (isSelected) GUI.backgroundColor = new Color(1f, 0.83f, 0.3f);
+        if (GUILayout.Button(isSelected ? "Cancel" : "Socket", buttonStyle, GUILayout.Width(70f)))
+            pending = () => selected = isSelected ? null : support;
+        GUI.backgroundColor = previous;
+        GUILayout.EndHorizontal();
+
+        GUILayout.Label($"<color=#888>For {SkillDatabase.TagText(data.requiresTags)} skills  ·  {data.manaMultiplier * 100f:0}% mana cost</color>", labelStyle);
+        GUILayout.Label(RequirementText(data.reqStr, data.reqDex, data.reqInt), rowLabelStyle);
+        GUILayout.Label($"<color=#aaa>{data.description}</color>", labelStyle);
 
         GUILayout.EndVertical();
         GUILayout.Space(4f);
@@ -164,20 +272,25 @@ public class SkillsWindow : MonoBehaviour, IGameWindow
 
     private string UseText(SkillData skill)
     {
+        float more = skill.supportDamageMultiplier;
         string damage = skill.IsAttack
-            ? $"{skill.damageMultiplier * 100f:0}% attack damage"
-            : $"{skill.minDamage:0}-{skill.maxDamage:0} {skill.parsedDamageType} damage";
+            ? $"{skill.damageMultiplier * more * 100f:0}% attack damage"
+            : $"{skill.minDamage * more:0}-{skill.maxDamage * more:0} {skill.parsedDamageType} damage";
         string count = skill.projectileCount > 1 ? $" × {skill.projectileCount} projectiles" : "";
-        return $"{damage}{count}  ·  {user.UseTime(skill):0.00}s per use";
+        string extras = "";
+        if (skill.extraFireFraction > 0f) extras += $"  ·  +{skill.extraFireFraction * 100f:0}% as Fire";
+        if (skill.pierceCount > 0) extras += $"  ·  pierces {skill.pierceCount}";
+        if (skill.skillKind == SkillKind.Slam) extras += $"  ·  {skill.radius:0.0}m radius";
+        return $"{damage}{count}{extras}  ·  {user.UseTime(skill):0.00}s per use";
     }
 
-    private string RequirementText(SkillData skill)
+    private string RequirementText(int reqStr, int reqDex, int reqInt)
     {
         string text = "<color=#888>Requires</color> ";
         bool any = false;
-        AppendRequirement(ref text, ref any, "Str", StatType.Strength, skill.reqStr);
-        AppendRequirement(ref text, ref any, "Dex", StatType.Dexterity, skill.reqDex);
-        AppendRequirement(ref text, ref any, "Int", StatType.Intelligence, skill.reqInt);
+        AppendRequirement(ref text, ref any, "Str", StatType.Strength, reqStr);
+        AppendRequirement(ref text, ref any, "Dex", StatType.Dexterity, reqDex);
+        AppendRequirement(ref text, ref any, "Int", StatType.Intelligence, reqInt);
         return any ? text : "<color=#888>No requirements</color>";
     }
 
@@ -193,6 +306,8 @@ public class SkillsWindow : MonoBehaviour, IGameWindow
     {
         foreach (SkillData skill in SkillDatabase.All)
             bar.AddGem(new SkillGem(skill.id));
+        foreach (SupportData support in SupportDatabase.All)
+            bar.AddSupport(new SupportGem(support.id));
     }
 
     private static void Fill(Rect rect, Color color)

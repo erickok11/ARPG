@@ -1,0 +1,68 @@
+{
+  "supports": [
+    {
+      "id": "multiple_projectiles",
+      "name": "Multiple Projectiles",
+      "description": "Fires 2 additional projectiles in a spread. 30% less damage.",
+      "requiresTags": ["projectile"],
+      "reqStr": 0, "reqDex": 10, "reqInt": 0,
+      "manaMultiplier": 1.4,
+      "damageMore": -30,
+      "addedProjectiles": 2
+    },
+    {
+      "id": "pierce",
+      "name": "Pierce",
+      "description": "Projectiles pierce 2 enemies before stopping.",
+      "requiresTags": ["projectile"],
+      "reqStr": 0, "reqDex": 10, "reqInt": 0,
+      "manaMultiplier": 1.2,
+      "pierceCount": 2
+    },
+    {
+      "id": "increased_area",
+      "name": "Increased Area",
+      "description": "40% increased radius.",
+      "requiresTags": ["area"],
+      "reqStr": 0, "reqDex": 0, "reqInt": 10,
+      "manaMultiplier": 1.3,
+      "radiusIncreased": 40
+    },
+    {
+      "id": "added_fire_damage",
+      "name": "Added Fire Damage",
+      "description": "Hits also deal 30% of their damage as extra Fire damage.",
+      "requiresTags": ["attack"],
+      "reqStr": 10, "reqDex": 0, "reqInt": 0,
+      "manaMultiplier": 1.3,
+      "extraFirePercent": 30
+    },
+    {
+      "id": "faster_attacks",
+      "name": "Faster Attacks",
+      "description": "25% more attack speed.",
+      "requiresTags": ["attack"],
+      "reqStr": 0, "reqDex": 10, "reqInt": 0,
+      "manaMultiplier": 1.2,
+      "attackSpeedMore": 25
+    },
+    {
+      "id": "faster_casting",
+      "name": "Faster Casting",
+      "description": "25% more cast speed.",
+      "requiresTags": ["spell"],
+      "reqStr": 0, "reqDex": 0, "reqInt": 10,
+      "manaMultiplier": 1.2,
+      "castSpeedMore": 25
+    },
+    {
+      "id": "melee_physical_damage",
+      "name": "Melee Physical Damage",
+      "description": "35% more damage with melee physical skills.",
+      "requiresTags": ["melee", "physical"],
+      "reqStr": 10, "reqDex": 0, "reqInt": 0,
+      "manaMultiplier": 1.4,
+      "damageMore": 35
+    }
+  ]
+}

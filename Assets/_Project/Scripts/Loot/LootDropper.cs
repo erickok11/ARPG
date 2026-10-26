@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.AI;
 
 /// <summary>
-/// Drops gold, crafting shards, skill gems and random items when this character dies.
+/// Drops gold, crafting shards, skill and support gems, and random items when this character dies.
 /// </summary>
 [RequireComponent(typeof(Health))]
 public class LootDropper : MonoBehaviour
@@ -30,6 +30,8 @@ public class LootDropper : MonoBehaviour
     [Header("Skill gems")]
     [Tooltip("Chance to drop a random skill gem.")]
     [SerializeField, Range(0f, 1f)] private float gemDropChance = 0.08f;
+    [Tooltip("Chance to drop a random support gem.")]
+    [SerializeField, Range(0f, 1f)] private float supportDropChance = 0.08f;
 
     private static Material placeholderCoinMaterial;
     private Health health;
@@ -52,6 +54,15 @@ public class LootDropper : MonoBehaviour
         if (Random.value < reforgeDropChance) DropShard(ShardType.Reforge);
         if (Random.value < rerollDropChance) DropShard(ShardType.Reroll);
         if (Random.value < gemDropChance) DropGem();
+        if (Random.value < supportDropChance) DropSupport();
+    }
+
+    private void DropSupport()
+    {
+        var supports = SupportDatabase.All;
+        if (supports.Count == 0) return;
+        SupportData support = supports[Random.Range(0, supports.Count)];
+        GemPickup.Spawn(new SupportGem(support.id), RandomFloorPosition(1f) + Vector3.up * 0.3f);
     }
 
     private void DropGem()

@@ -48,6 +48,15 @@ public class SkillData
     [NonSerialized] public DamageType parsedDamageType;
     [NonSerialized] public Color parsedColor;
 
+    // Set by socketed support gems (see SupportData.Apply), never read from the JSON.
+    [NonSerialized] public float supportDamageMultiplier = 1f; // 0.7 = 30% less damage
+    [NonSerialized] public float extraFireFraction;            // 0.3 = each hit also deals 30% of its damage as Fire
+    [NonSerialized] public int pierceCount;                     // enemies a projectile passes through before stopping
+    [NonSerialized] public SupportData[] supports = Array.Empty<SupportData>();
+
+    /// <summary>A copy to apply supports to, so the shared skill from the database never changes.</summary>
+    public SkillData Clone() => (SkillData)MemberwiseClone();
+
     public bool HasTag(string tag) => tags != null && Array.IndexOf(tags, tag) >= 0;
     public bool IsAttack => HasTag("attack");
     public bool IsSpell => HasTag("spell");

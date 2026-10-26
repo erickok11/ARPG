@@ -1,10 +1,12 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// A skill gem on the ground. Bobs with a name label, flies to the player when they get close,
-/// and goes onto their SkillBar (straight onto an empty Q/W/E/R slot if there is one).
+/// A skill or support gem on the ground. Bobs with a name label, flies to the player when they get close,
+/// and goes onto their SkillBar (skill gems go straight onto an empty Q/W/E/R slot if there is one).
 /// Color follows the main attribute: red = Strength, green = Dexterity, blue = Intelligence.
+/// Support gems are smaller and round.
 /// </summary>
 public class GemPickup : MonoBehaviour
 {
@@ -24,21 +26,33 @@ public class GemPickup : MonoBehaviour
     private GUIStyle style;
     private Camera cam;
     private Color gemColor;
-
-    public SkillGem Gem { get; private set; }
+    private string label;
+    private Action<SkillBar> give;
 
     public static GemPickup Spawn(SkillGem gem, Vector3 position)
     {
         SkillData data = gem?.Data;
         if (data == null) return null;
+        return Create($"{data.name} Gem", SkillDatabase.GemColor(data), new Vector3(0.22f, 0.3f, 0.22f),
+                      position, bar => bar.AddGem(gem));
+    }
 
+    public static GemPickup Spawn(SupportGem support, Vector3 position)
+    {
+        SupportData data = support?.Data;
+        if (data == null) return null;
+        return Create($"{data.name} Support", SupportDatabase.GemColor(data), new Vector3(0.2f, 0.2f, 0.2f),
+                      position, bar => bar.AddSupport(support));
+    }
+
+    private static GemPickup Create(string label, Color color, Vector3 scale, Vector3 position, Action<SkillBar> give)
+    {
         GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        go.name = $"Gem: {data.name}";
+        go.name = label;
         go.transform.position = position;
-        go.transform.localScale = new Vector3(0.22f, 0.3f, 0.22f);
+        go.transform.localScale = scale;
         Destroy(go.GetComponent<Collider>());
 
-        Color color = SkillDatabase.GemColor(data);
         Renderer renderer = go.GetComponent<Renderer>();
         if (!materials.TryGetValue(color, out Material material) || material == null)
         {
@@ -48,8 +62,9 @@ public class GemPickup : MonoBehaviour
         renderer.sharedMaterial = material;
 
         GemPickup pickup = go.AddComponent<GemPickup>();
-        pickup.Gem = gem;
+        pickup.label = label;
         pickup.gemColor = color;
+        pickup.give = give;
         return pickup;
     }
 
@@ -76,14 +91,14 @@ public class GemPickup : MonoBehaviour
 
         if (distance <= pickupRadius)
         {
-            bar.AddGem(Gem);
+            give(bar);
             Destroy(gameObject);
         }
     }
 
     private void OnGUI()
     {
-        if (magnetized || Gem == null || Event.current.type != EventType.Repaint) return;
+        if (magnetized || Event.current.type != EventType.Repaint) return;
 
         if (cam == null) cam = Camera.main;
         if (cam == null) return;
@@ -102,7 +117,7 @@ public class GemPickup : MonoBehaviour
             };
         }
 
-        var content = new GUIContent($"{Gem.Name} Gem");
+        var content = new GUIContent(label);
         Vector2 size = style.CalcSize(content);
         size.x += 12f;
         size.y += 2f;

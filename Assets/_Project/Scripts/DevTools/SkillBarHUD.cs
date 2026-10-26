@@ -82,7 +82,7 @@ public class SkillBarHUD : MonoBehaviour
     private void DrawSlot(int slot, Rect rect)
     {
         SkillGem gem = bar.Get(slot);
-        SkillData skill = gem?.Data;
+        SkillData skill = gem?.Effective;
 
         Fill(rect, new Color(0f, 0f, 0f, 0.8f));
         Color border = skill != null ? SkillDatabase.GemColor(skill) : new Color(0.3f, 0.3f, 0.3f);
@@ -90,6 +90,11 @@ public class SkillBarHUD : MonoBehaviour
 
         textStyle.normal.textColor = new Color(0.75f, 0.75f, 0.75f);
         GUI.Label(new Rect(rect.x + 5f, rect.y + 3f, 20f, 18f), SkillBar.SlotKeys[slot], textStyle);
+        if (gem != null && gem.supports.Count > 0)
+        {
+            textStyle.normal.textColor = new Color(1f, 0.83f, 0.3f);
+            GUI.Label(new Rect(rect.xMax - 26f, rect.y + 3f, 24f, 18f), $"+{gem.supports.Count}", textStyle);
+        }
 
         if (skill == null)
         {

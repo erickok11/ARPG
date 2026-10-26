@@ -3,14 +3,16 @@ using UnityEngine;
 
 /// <summary>
 /// A flying projectile (Fireball, Scatter Blades). Moves in a straight line, hits the first
-/// target it touches, and stops at walls or after its max distance.
+/// target it touches (or passes through a few with Pierce), and stops at walls or after its max distance.
 /// </summary>
 public class Projectile : MonoBehaviour
 {
     private static readonly Dictionary<Color, Material> materials = new Dictionary<Color, Material>();
 
     private GameObject owner;
-    private DamageResult damage;
+    private DamageResult[] damage;
+    private int piercesLeft;
+    private readonly HashSet<Health> alreadyHit = new HashSet<Health>();
     private float speed;
     private float maxDistance;
     private float radius;
@@ -20,8 +22,8 @@ public class Projectile : MonoBehaviour
     private float travelled;
 
     public static Projectile Spawn(GameObject owner, Vector3 position, Vector3 direction, float speed,
-                                   float maxDistance, float radius, Color color, DamageResult damage,
-                                   LayerMask targetMask, LayerMask obstacleMask)
+                                   float maxDistance, float radius, Color color, DamageResult[] damage,
+                                   int pierceCount, LayerMask targetMask, LayerMask obstacleMask)
     {
         GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         go.name = "Projectile";
@@ -44,6 +46,7 @@ public class Projectile : MonoBehaviour
         Projectile p = go.AddComponent<Projectile>();
         p.owner = owner;
         p.damage = damage;
+        p.piercesLeft = pierceCount;
         p.speed = speed;
         p.maxDistance = maxDistance;
         p.radius = radius;
@@ -70,9 +73,16 @@ public class Projectile : MonoBehaviour
         foreach (Collider c in Physics.OverlapSphere(transform.position, radius, targetMask))
         {
             Health target = c.GetComponentInParent<Health>();
-            if (target == null || target.IsDead || target.gameObject == owner) continue;
+            if (target == null || target.IsDead || target.gameObject == owner || !alreadyHit.Add(target)) continue;
 
             Combat.Hit(owner, target, damage);
+            if (piercesLeft > 0)
+            {
+                piercesLeft--;
+                SkillEffect.Burst(transform.position, color, Mathf.Max(0.4f, radius * 1.5f), 0.1f);
+                continue;
+            }
+
             Explode(transform.position);
             return;
         }
