@@ -26,6 +26,7 @@ public class StatDebugOverlay : MonoBehaviour
 
     private CharacterStats stats;
     private Health health;
+    private Wallet wallet;
     private GUIStyle labelStyle;
     private readonly StringBuilder text = new StringBuilder();
 
@@ -33,6 +34,7 @@ public class StatDebugOverlay : MonoBehaviour
     {
         stats = GetComponent<CharacterStats>();
         health = GetComponent<Health>();
+        wallet = GetComponent<Wallet>();
     }
 
     private void OnGUI()
@@ -51,8 +53,14 @@ public class StatDebugOverlay : MonoBehaviour
         {
             string lifeColor = health.Fraction > 0.5f ? "#7f7" : health.Fraction > 0.25f ? "#fd5" : "#f66";
             text.AppendLine($"<b>Life  <color={lifeColor}>{health.Current:0} / {health.Max:0}</color></b>");
-            text.AppendLine();
+            if (health.IsDead)
+                text.AppendLine("<b><color=#f66>YOU DIED</color></b>  <color=#aaa>(stop and press Play again)</color>");
         }
+
+        if (wallet != null)
+            text.AppendLine($"<b>Gold  <color=#fc3>{wallet.Gold}</color></b>");
+
+        text.AppendLine();
 
         foreach (StatType type in shownStats)
         {
